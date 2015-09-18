@@ -1,0 +1,2 @@
+
+# Atom Haxe IDE

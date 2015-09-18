@@ -1,0 +1,16 @@
+'menu': [
+    {
+        'label': 'Packages'
+        'submenu': [
+            'label': 'Haxe IDE'
+            'submenu': [
+                { 'label': 'Toggle Server Log', 'command': 'haxe:toggle-server-log' }
+            ]
+        ]
+    }
+]
+'context-menu':
+    '[data-path$=hxml]': [
+        { label: 'Build', command: 'haxe:build' },
+        { type: 'separator' }
+    ]
