@@ -6,6 +6,7 @@ import js.html.AnchorElement;
 import js.html.DivElement;
 import js.html.SpanElement;
 import atom.haxe.service.HaxeServerService;
+import om.Time.now;
 
 class StatusBarView {
 
@@ -13,9 +14,11 @@ class StatusBarView {
 
     var icon : SpanElement;
     var text : AnchorElement;
+    var time : SpanElement;
 
     var currentStatus : BuildStatus;
     var path : String;
+    var buildStartTime : Float;
 
     public function new() {
 
@@ -30,6 +33,10 @@ class StatusBarView {
         text = document.createAnchorElement();
         text.classList.add( 'hxml' );
         dom.appendChild( text );
+
+        time = document.createSpanElement();
+        time.classList.add( 'time' );
+        dom.appendChild( time );
 
         text.addEventListener( 'click', handleClickText, false );
     }
@@ -46,18 +53,37 @@ class StatusBarView {
     }
 
     public function setBuildStatus( status : BuildStatus ) {
+
         for( e in [icon,text] ) {
             e.classList.remove( currentStatus );
             e.classList.add( status );
         }
+
         currentStatus = status;
+
+        switch status {
+        case active:
+            buildStartTime = now();
+        case success:
+            var buildDuration = (now() - buildStartTime) / 1000;
+            var buildDurationString = Std.string( buildDuration );
+            buildDurationString = buildDurationString.substr( 0, buildDurationString.indexOf( '.' )+2 );
+            time.textContent = '($buildDurationString)';
+        default:
+        }
     }
 
     public function setBuildPath( path : String ) {
-        this.path = path;
-        var pathParts = Atom.project.relativizePath( path );
-        var projectPathParts = pathParts[0].split( '/' );
-        text.textContent = projectPathParts[projectPathParts.length-1]+'/'+pathParts[1];
+        if( path != null ) {
+            this.path = path;
+            var pathParts = Atom.project.relativizePath( path );
+            if( pathParts[0] != null ) {
+                var projectPathParts = pathParts[0].split( '/' );
+                text.textContent = projectPathParts[projectPathParts.length-1]+'/'+pathParts[1];
+            }
+        } else {
+            text.textContent = "";
+        }
     }
 
     public function destroy() {

@@ -18,6 +18,9 @@ class Build {
     public function new() {}
 
     public function start( args : Array<String> ) {
+
+        //trace(args);
+
         proc = spawn( 'haxe', args );
         proc.stdout.on( 'data', handleData );
         proc.stderr.on( 'data', handleError );

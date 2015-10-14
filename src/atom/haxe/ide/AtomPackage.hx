@@ -56,6 +56,16 @@ class AtomPackage {
         if( savedState.hxmlFile != null ) {
             if( fileExists( savedState.hxmlFile ) ) {
                 hxmlFile = savedState.hxmlFile;
+                trace(hxmlFile);
+                /*
+                var dir = new atom.Directory( hxmlFile.directory() );
+                dir.onDidChange(function(){
+                    trace("CHANGED");
+                });
+                */
+                //trace(new atom.Directory('/home/tong/dev/tool/atom-haxe-ide/'));
+                //js.node.Fs.watchFile('/home/tong/dev/tool/atom-haxe-ide/build.hxml',{persistent:true},handleFilechange);
+
                 statusbar.setBuildPath( hxmlFile );
             }
         }
@@ -83,11 +93,11 @@ class AtomPackage {
             serverLog.add( msg );
             serverLog.scrollToBottom(); //TODO doesn't work
         }
+
         server.start(
             Atom.config.get( 'haxe-ide.haxe_path' ),
             Atom.config.get( 'haxe-ide.server_port' ),
             Atom.config.get( 'haxe-ide.server_host' ) );
-
 
         subscriptions = new CompositeDisposable();
         subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:build', build ) );
@@ -147,7 +157,6 @@ class AtomPackage {
         }
 
         //args.push('--times'); //TODO
-
         //trace(args);
 
         var build = new Build();
@@ -158,106 +167,57 @@ class AtomPackage {
 
             statusbar.setBuildStatus( error );
 
-            var errors = new Array<ErrorMessage>();
+            var haxeErrors = new Array<ErrorMessage>();
             for( line in msg.split( '\n' ) ) {
                 line = line.trim();
                 if( line.length == 0 )
                     continue;
                 var err = ErrorMessage.parse( line );
                 if( err != null ) {
-                    errors.push( err );
+                    haxeErrors.push( err );
                 } else {
-                    trace( 'Failed to parse error message: '+line );
+                    log.message( line, 'error' );
                 }
             }
 
-            if( errors.length > 0 ) {
+            if( haxeErrors.length > 0 ) {
 
-                for( err in errors )
+                for( err in haxeErrors )
                     log.error( err );
-                log.show();
 
-                var err0 = errors[0];
-                Atom.workspace.open( dirPath+'/'+err0.path, {
-                    initialLine: err0.line - 1,
-                    initialColumn: err0.pos.start,
+                var err = haxeErrors[0];
+                var filePath = err.path.startsWith('/') ? err.path : dirPath+'/'+err.path;
+                var column =
+                    if( err.lines != null ) err.lines.start;
+                    else if( err.characters != null ) err.characters.start;
+                    else err.character;
+
+                Atom.workspace.open( filePath, {
+                    initialLine: err.line - 1,
+                    initialColumn: column,
                     activatePane: true,
                     searchAllPanes : true
+                }).then( function(editor:TextEditor){
+
+                    //TODO texteditor decoration
+
+                    //var range = editor.getSelectedBufferRange();
+                    var range = new atom.Range( [3,0],[4,5] );
+                    var marker = editor.markBufferRange( range, { invalidate:'overlap' } );
+                    var params : Dynamic = {  type:'line' };
+                    Reflect.setField( params, 'class', 'haxe-error-decoration' );
+                    // Why does the class fucking not apply ?????
+                    var decoration = editor.decorateMarker( marker, params );
                 });
             }
+
+            log.show();
+
         }
         build.onSuccess = function() {
             statusbar.setBuildStatus( success );
         }
         build.start( args );
-
-        /*
-        haxeBuildService.build( args,
-            function(msg){
-                log.message( msg ).show();
-            },
-            function(msg){
-
-                statusbar.setBuildStatus( error );
-
-                if( msg.length == 0 )
-                    return;
-
-                var errors = new Array<ErrorMessage>();
-                var plainTextErrors = new Array<String>();
-                for( line in msg.split( '\n' ) ) {
-                    line = line.trim();
-                    if( line.length == 0 )
-                        continue;
-                    var err = ErrorMessage.parse( line );
-                    if( err == null ) {
-                        plainTextErrors.push( line );
-                    } else {
-                        errors.push( err );
-                    }
-                }
-                for( err in errors ) log.error( err );
-                for( err in plainTextErrors ) log.message( err, 'error' );
-                log.show();
-
-
-                /*
-                var errPath = err0.path;
-                while( errPath.startsWith('../') ) {
-                    errPath = errPath.substr(3);
-                }
-                * /
-
-                //trace(dirPath);
-                //trace(errPath);
-                //trace( Atom.project.relativizePath( err0.path ) );
-
-                if( errors.length > 0 ) {
-                    var err0 = errors[0];
-                    Atom.workspace.open( dirPath+'/'+err0.path, {
-                        initialLine: err0.line - 1,
-                        initialColumn: err0.pos.start,
-                        activatePane: true,
-                        searchAllPanes : true
-                    });
-                }
-
-                /*
-                Atom.workspace.observeTextEditors(function(e){
-                    if( untyped e.buffer.file.path.endsWith( errPath ) ) {
-                        trace(e);
-                    }
-                });
-                * /
-                //var editor = Atom.workspace.getActiveTextEditor();
-                //editor.selectAll();
-
-            },
-            function(){
-                statusbar.setBuildStatus( success );
-            }
-        );
-        */
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -293,6 +253,9 @@ class AtomPackage {
                     args.push( '--connect' );
                     args.push( Std.string( server.port ) );
                 }
+
+                //TODO
+                //_build();
 
                 //log.clear();
 

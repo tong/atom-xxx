@@ -5,19 +5,31 @@ private typedef Position = {
     var end : Int;
 }
 
+//TODO move this class to lib/haxe-tools project
+
 class ErrorMessage {
 
-    static var EXP = ~/^(.+):([0-9]+): characters ([0-9]+\-[0-9]+) : (.+)$/i;
+    public static var EXP(default,null) = ~/^\s*(.+):([0-9]+):\s*(characters*|lines)\s([0-9]+)(-([0-9]+))?\s:\s(.+)$/i;
 
     public var path : String;
     public var line : Int;
-    public var pos : Position;
+    public var lines : Position;
+    public var character : Int;
+    public var characters : Position;
     public var content : String;
 
     public function new() {}
 
     public function toString() : String {
-        return '$path:$line: characters ${pos.start}-${pos.end} : $content';
+        var str = '$path:$line: ';
+        if( lines != null )
+            str += 'lines ${lines.start}-${lines.end}';
+        else if( character != null )
+            str += 'character $character';
+        else if( characters != null )
+            str += 'characters ${characters.start}-${characters.end}';
+        str += ' : $content';
+        return str;
     }
 
     public static function parse( str : String ) : ErrorMessage {
@@ -25,9 +37,24 @@ class ErrorMessage {
             var e = new ErrorMessage();
             e.path = EXP.matched(1);
             e.line = Std.parseInt( EXP.matched(2) );
-            var _pos = EXP.matched(3).split( '-' );
-            e.pos = { start: Std.parseInt(_pos[0]), end: Std.parseInt(_pos[1]) };
-            e.content = EXP.matched(4);
+            var posType = EXP.matched(3);
+            switch posType {
+            case 'character':
+                e.character = Std.parseInt( EXP.matched(4) );
+                e.content = EXP.matched(7);
+            case 'characters':
+                e.characters = {
+                    start: Std.parseInt(EXP.matched(4)),
+                    end: Std.parseInt(EXP.matched(6))
+                };
+                e.content = EXP.matched(7);
+            case 'lines':
+                e.lines = {
+                    start: Std.parseInt(EXP.matched(4)),
+                    end: Std.parseInt(EXP.matched(6))
+                };
+                e.content = EXP.matched(7);
+            }
             return e;
         }
         return null;

@@ -1,6 +1,7 @@
 -js lib/haxe-ide.js
 -lib hxnodejs
 -cp ../../lib/hxatom/src
+-cp ../../lib/om/src
 -cp ../atom-haxe-c/src/
 #-cp ../../lib/haxe-tools/src
 #-cp ../../lib/om/src

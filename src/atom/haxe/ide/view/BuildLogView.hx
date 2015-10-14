@@ -97,8 +97,10 @@ private class LogMessageView extends MessageView {
 
         var content = document.createSpanElement();
         content.classList.add( 'content' );
+        //content.textContent = StringTools.htmlUnescape( text );
         content.textContent = text;
         dom.appendChild( content );
+
     }
 
     override function copyToClipboard() {
@@ -135,6 +137,22 @@ private class ErrorMessageView extends MessageView {
         dom.appendChild( line );
         line.onclick = function(_) open( error.line-1 );
 
+
+        var pos = document.createAnchorElement();
+        pos.classList.add( 'link' );
+        if( error.character != null ) {
+            span( ': character ' );
+            pos.textContent = Std.string( error.character );
+        } else if( error.characters != null )  {
+            span( ': characters ' );
+            pos.textContent = error.characters.start+'-'+error.characters.end;
+        } else {
+            span( ': lines ' );
+            pos.textContent = error.lines.start+'-'+error.lines.end;
+        }
+        dom.appendChild( pos );
+
+        /*
         span( ': characters ' );
 
         var pos = document.createAnchorElement();
@@ -142,6 +160,7 @@ private class ErrorMessageView extends MessageView {
         pos.textContent = error.pos.start+'-'+error.pos.end;
         dom.appendChild( pos );
         pos.onclick = function(_) open( error.line-1, error.pos.start-1 );
+        */
 
         span( ': ' );
 

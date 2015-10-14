@@ -22,7 +22,7 @@ class ServerLogView {
         messages.classList.add( 'messages', 'scroller' );
         dom.appendChild( messages );
 
-        panel = Atom.workspace.addRightPanel( { item:dom, visible:true } );
+        panel = Atom.workspace.addRightPanel( { item:dom, visible:false } );
 
         dom.addEventListener( 'click', handleClick, false  );
         dom.addEventListener( 'contextmenu', handleContextMenu, false  );
