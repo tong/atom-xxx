@@ -12,19 +12,19 @@ class Build {
     public dynamic function onError( msg : String ) {}
     public dynamic function onSuccess() {}
 
+    public var exe(default,null) : String;
+
     var proc : ChildProcess;
     var error : String;
 
-    public function new() {}
+    public function new( exe : String ) {
+        this.exe = exe;
+    }
 
     public function start( args : Array<String> ) {
-
-        //trace(args);
-
-        proc = spawn( 'haxe', args );
+        proc = spawn( exe, args );
         proc.stdout.on( 'data', handleData );
         proc.stderr.on( 'data', handleError );
-        //proc.on( 'error', handleError );
         proc.on( 'exit', handleExit );
     }
 

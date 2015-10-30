@@ -1,7 +1,7 @@
 {
     "name": "haxe-ide",
     "main": "./lib/haxe-ide",
-    "version": "0.2.0",
+    "version": "0.2.2",
     "description": "Haxe IDE",
     "keywords": ["haxe","ide"],
     "consumedServices": {
@@ -35,7 +35,7 @@
     "repository": "https://github.com/tong/atom-haxe-ide",
     "license": "GPL",
     "engines": {
-        "atom": ">=0.174.0 <2.0.0"
+        "atom": ">=1.1.0 <2.0.0"
     },
     "dependencies": {
         "language-haxe": "^0.3.0"

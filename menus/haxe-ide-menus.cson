@@ -11,6 +11,6 @@
 ]
 'context-menu':
     '[data-path$=hxml]': [
-        { label: 'Build', command: 'haxe:build' },
+        { label: 'Haxe', command: 'haxe:build' },
         { type: 'separator' }
     ]

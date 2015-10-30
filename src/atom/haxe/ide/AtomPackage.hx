@@ -5,6 +5,7 @@ import atom.CompositeDisposable;
 import atom.haxe.ide.view.BuildLogView;
 import atom.haxe.ide.view.StatusBarView;
 import atom.haxe.ide.view.ServerLogView;
+import haxe.compiler.ErrorMessage;
 
 using StringTools;
 using haxe.io.Path;
@@ -15,23 +16,23 @@ class AtomPackage {
     static inline function __init__() untyped module.exports = atom.haxe.ide.AtomPackage;
 
     static var config = {
+        haxe_path: {
+            "title": "Haxe executable path",
+            "description": "Path to haxe executable",
+            "type": "string",
+            "default": "haxe"
+        },
         server_port: {
-            "title": "Server port",
+            "title": "Haxe server port",
             "description": "The port number the haxe server will wait on.",
             "type": "integer",
             "default": 7000
         },
         server_host: {
-            "title": "Server host name",
+            "title": "Haxe server host name",
             "description": "The ip adress the haxe server will listen.",
             "type": "string",
             "default": "127.0.0.1"
-        },
-        haxe_path: {
-            "title": "Haxe executable path",
-            "description": "Path to haxe",
-            "type": "string",
-            "default": "haxe"
         }
     };
 
@@ -56,7 +57,7 @@ class AtomPackage {
         if( savedState.hxmlFile != null ) {
             if( fileExists( savedState.hxmlFile ) ) {
                 hxmlFile = savedState.hxmlFile;
-                trace(hxmlFile);
+                //trace(hxmlFile);
                 /*
                 var dir = new atom.Directory( hxmlFile.directory() );
                 dir.onDidChange(function(){
@@ -102,7 +103,7 @@ class AtomPackage {
         subscriptions = new CompositeDisposable();
         subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:build', build ) );
 
-        configChangeListener = Atom.config.onDidChange( 'haxe-c', {}, function(e){
+        configChangeListener = Atom.config.onDidChange( 'haxe-ide', {}, function(e){
             server.stop();
             server.start( e.newValue.haxe_path, e.newValue.server_port, e.newValue.server_host );
         });
@@ -132,6 +133,8 @@ class AtomPackage {
 
     static function build(e) {
 
+        log.clear();
+
         var selectedFile = getTreeViewFile();
         if( selectedFile != null && selectedFile.extension() == 'hxml' ) {
             hxmlFile = selectedFile;
@@ -142,82 +145,95 @@ class AtomPackage {
             }
         }
 
-        var dirPath = hxmlFile.directory();
-        var filePath = hxmlFile.withoutDirectory();
+        Fs.readFile( hxmlFile, {encoding:'utf8'}, function(e,r){
 
-        log.clear();
-        statusbar.setBuildPath( hxmlFile );
-        statusbar.setBuildStatus( active );
+            if( e != null ) {
+                Atom.notifications.addError( 'Failed to read hxml file : '+hxmlFile );
+                return;
+            }
 
-        var args = [ '--cwd', dirPath, filePath ];
+            statusbar.setBuildPath( hxmlFile );
+            statusbar.setBuildStatus( active );
 
-        if( server.running ) {
-            args.push( '--connect' );
-            args.push( Std.string( server.port ) );
-        }
+            var dirPath = hxmlFile.directory();
+            //var filePath = hxmlFile.withoutDirectory();
 
-        //args.push('--times'); //TODO
-        //trace(args);
+            var tokens = haxe.Hxml.parseTokens( r );
+            var args = [ '--cwd', dirPath ].concat( tokens );
+            if( server.running ) {
+                args.push( '--connect' );
+                args.push( Std.string( server.port ) );
+            }
+            //args.push('--times'); //TODO
+            //trace(args);
 
-        var build = new Build();
-        build.onMessage = function(msg){
-            log.message( msg ).show();
-        }
-        build.onError = function(msg){
+            var build = new Build( Atom.config.get( 'haxe-ide.haxe_path' ) );
 
-            statusbar.setBuildStatus( error );
+            build.onMessage = function(msg){
+                var lines = msg.split( '\n' );
+                for( line in lines ) log.message( line );
+                log.show();
+            }
 
-            var haxeErrors = new Array<ErrorMessage>();
-            for( line in msg.split( '\n' ) ) {
-                line = line.trim();
-                if( line.length == 0 )
-                    continue;
-                var err = ErrorMessage.parse( line );
-                if( err != null ) {
-                    haxeErrors.push( err );
-                } else {
-                    log.message( line, 'error' );
+            build.onError = function(msg){
+
+                statusbar.setBuildStatus( error );
+
+                if( msg != null ) {
+                    var haxeErrors = new Array<ErrorMessage>();
+                    for( line in msg.split( '\n' ) ) {
+                        line = line.trim();
+                        if( line.length == 0 )
+                            continue;
+                        var err = ErrorMessage.parse( line );
+                        if( err != null ) {
+                            haxeErrors.push( err );
+                        } else {
+                            log.message( line, 'error' );
+                        }
+                    }
+
+                    if( haxeErrors.length > 0 ) {
+
+                        for( err in haxeErrors )
+                            log.error( err );
+
+                        var err = haxeErrors[0];
+                        var filePath = err.path.startsWith('/') ? err.path : dirPath+'/'+err.path;
+                        var column =
+                            if( err.lines != null ) err.lines.start;
+                            else if( err.characters != null ) err.characters.start;
+                            else err.character;
+
+                        Atom.workspace.open( filePath, {
+                            initialLine: err.line - 1,
+                            initialColumn: column,
+                            activatePane: true,
+                            searchAllPanes : true
+                        }).then( function(editor:TextEditor){
+
+                            //TODO texteditor decoration
+
+                            //var range = editor.getSelectedBufferRange();
+                            var range = new atom.Range( [3,0],[4,5] );
+                            var marker = editor.markBufferRange( range, { invalidate:'overlap' } );
+                            var params : Dynamic = {  type:'line' };
+                            Reflect.setField( params, 'class', 'haxe-error-decoration' );
+                            // Why does the class fucking not apply ?????
+                            var decoration = editor.decorateMarker( marker, params );
+                        });
+                    }
+
+                    log.show();
                 }
             }
 
-            if( haxeErrors.length > 0 ) {
-
-                for( err in haxeErrors )
-                    log.error( err );
-
-                var err = haxeErrors[0];
-                var filePath = err.path.startsWith('/') ? err.path : dirPath+'/'+err.path;
-                var column =
-                    if( err.lines != null ) err.lines.start;
-                    else if( err.characters != null ) err.characters.start;
-                    else err.character;
-
-                Atom.workspace.open( filePath, {
-                    initialLine: err.line - 1,
-                    initialColumn: column,
-                    activatePane: true,
-                    searchAllPanes : true
-                }).then( function(editor:TextEditor){
-
-                    //TODO texteditor decoration
-
-                    //var range = editor.getSelectedBufferRange();
-                    var range = new atom.Range( [3,0],[4,5] );
-                    var marker = editor.markBufferRange( range, { invalidate:'overlap' } );
-                    var params : Dynamic = {  type:'line' };
-                    Reflect.setField( params, 'class', 'haxe-error-decoration' );
-                    // Why does the class fucking not apply ?????
-                    var decoration = editor.decorateMarker( marker, params );
-                });
+            build.onSuccess = function() {
+                statusbar.setBuildStatus( success );
             }
 
-            log.show();
-
-        }
-        build.onSuccess = function() {
-            statusbar.setBuildStatus( success );
-        }
-        build.start( args );
+            build.start( args );
+        });
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -260,7 +276,7 @@ class AtomPackage {
                 //log.clear();
 
                 //var startTime = now();
-                var build = new atom.haxe.Build();
+                var build = new atom.haxe.ide.Build( Atom.config.get( 'haxe-ide.haxe_path' ) );
                 build.onMessage = onMessage;
                 build.onError = function(msg){
                     //log.scrollToBottom();

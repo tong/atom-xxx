@@ -5,6 +5,7 @@ import js.html.Element;
 import js.html.AnchorElement;
 import js.html.DivElement;
 import js.html.SpanElement;
+import haxe.compiler.ErrorMessage;
 
 class BuildLogView {
 

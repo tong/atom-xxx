@@ -1,15 +1,13 @@
 -js lib/haxe-ide.js
--lib hxnodejs
+-cp src
 -cp ../../lib/hxatom/src
 -cp ../../lib/om/src
--cp ../atom-haxe-c/src/
-#-cp ../../lib/haxe-tools/src
-#-cp ../../lib/om/src
-#-cp ../../tools/atom-haxe-ide/src
--cp src
+-cp ../../lib/haxe-devtools/src
+-lib hxnodejs
+-dce full
 -D atom
 -D noEmbedJS
--dce full
+-D analyzer
 -debug
 #--no-traces
 atom.haxe.ide.AtomPackage

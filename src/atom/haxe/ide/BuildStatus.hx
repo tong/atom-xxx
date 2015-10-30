@@ -1,6 +1,6 @@
 package atom.haxe.ide;
 
-@:enum abstract BuildStatus(String) to String {
+@:enum abstract BuildStatus(String) from String to String {
     //var off = 'off';
     //var wait = 'wait';
     var active = 'active';

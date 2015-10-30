@@ -21,17 +21,16 @@ class Server {
         running = false;
     }
 
-    public function start( exe : String, port : Int, host : String ) {
+    public function start( exe : String, port : Int, host : String, verbose = true ) {
 
-        trace( "Starting haxe server" );
+        trace( 'Starting haxe server $host:$port' );
 
         this.exe = exe;
         this.port = port;
         this.host = host;
 
         var args = new Array<String>();
-
-        args.push( '-v' );
+        if( verbose ) args.push( '-v' );
         args.push( '--wait' );
         args.push( '$host:$port' );
 
@@ -41,7 +40,6 @@ class Server {
         proc.on( 'error', function(e) trace(e) );
 
         running = true;
-
         onStart();
     }
 
