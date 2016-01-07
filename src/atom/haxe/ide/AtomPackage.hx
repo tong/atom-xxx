@@ -5,6 +5,7 @@ import atom.CompositeDisposable;
 import atom.haxe.ide.view.BuildLogView;
 import atom.haxe.ide.view.StatusBarView;
 import atom.haxe.ide.view.ServerLogView;
+import haxe.Timer;
 import haxe.compiler.ErrorMessage;
 
 using StringTools;
@@ -33,7 +34,28 @@ class AtomPackage {
             "description": "The ip adress the haxe server will listen.",
             "type": "string",
             "default": "127.0.0.1"
+        },
+        server_startdelay:{
+            "title": 'Activation start delay',
+            "description": 'The delay in seconds before starting the haxe server.',
+            "type": 'integer',
+            "minimum": 0,
+            "default": 3
         }
+        /*
+        build_server_enabled: {
+            "title": "Enable/Disable haxe build server",
+            "description": "Enables/Disables to start an internal build server",
+            "type": "boolean",
+            "default": true
+        }
+        log_show_number: {
+            "title": "Show Line Numbers",
+            "description": "Show line numbers in build log",
+            "type": "boolean",
+            "default": true
+        }
+        */
     };
 
     static var server : atom.haxe.ide.Server;
@@ -91,33 +113,43 @@ class AtomPackage {
             //Atom.notifications.addError( msg );
         }
         server.onMessage = function(msg){
+            //trace(msg);
             serverLog.add( msg );
             serverLog.scrollToBottom(); //TODO doesn't work
         }
 
-        server.start(
-            Atom.config.get( 'haxe-ide.haxe_path' ),
-            Atom.config.get( 'haxe-ide.server_port' ),
-            Atom.config.get( 'haxe-ide.server_host' ) );
+        var startDelay = Atom.config.get( 'haxe-ide.server_startdelay' );
+        Timer.delay(function(){
+            server.start(
+                Atom.config.get( 'haxe-ide.haxe_path' ),
+                Atom.config.get( 'haxe-ide.server_port' ),
+                Atom.config.get( 'haxe-ide.server_host' )
+            );
+        }, startDelay * 1000 );
 
         subscriptions = new CompositeDisposable();
         subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:build', build ) );
+        subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe-ide:toggle-server-log', function(_) serverLog.toggle() ) );
+
+        /*
+        Atom.commands.add( 'atom-workspace', 'haxe-ide:toggle-server-log', function(e){
+            trace("TOFGGLLE");
+            serverLog.toggle();
+        });
+        */
 
         configChangeListener = Atom.config.onDidChange( 'haxe-ide', {}, function(e){
+            //TODO check which option has changed
             server.stop();
             server.start( e.newValue.haxe_path, e.newValue.server_port, e.newValue.server_host );
         });
 
-        //Atom.commands.add( 'atom-workspace', 'haxe-c:toggle-server-log', toggleServerLog );
     }
 
     static function deactivate() {
-
         subscriptions.dispose();
         configChangeListener.dispose();
-
         server.stop();
-
         log.destroy();
         statusbar.destroy();
         serverLog.destroy();
@@ -161,6 +193,10 @@ class AtomPackage {
             var tokens = haxe.Hxml.parseTokens( r );
             var args = [ '--cwd', dirPath ].concat( tokens );
             if( server.running ) {
+
+                //TODO why not write directly to stdin of server process ?
+                //server.stdin.write();
+
                 args.push( '--connect' );
                 args.push( Std.string( server.port ) );
             }

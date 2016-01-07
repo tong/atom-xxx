@@ -13,6 +13,7 @@ class BuildLogView {
 
     var panel : atom.Panel;
     var messages : DivElement;
+    var numMessages : Int;
 
     public function new() {
 
@@ -26,6 +27,8 @@ class BuildLogView {
         panel = Atom.workspace.addBottomPanel( { item:dom, visible:false } );
 
         dom.addEventListener( 'contextmenu', handleRightClick, false );
+
+        numMessages = 0;
     }
 
     public function show() {
@@ -37,13 +40,15 @@ class BuildLogView {
     }
 
     public function message( msg : String, ?status : String ) {
-        var view = new LogMessageView( msg, messages.children.length, status );
+        numMessages++;
+        var view = new LogMessageView( msg, messages.children.length, status, numMessages );
         messages.appendChild( view.dom );
         return this;
     }
 
     public function error( err : ErrorMessage ) {
-        var view = new ErrorMessageView( err, messages.children.length );
+        numMessages++;
+        var view = new ErrorMessageView( err, messages.children.length, numMessages );
         messages.appendChild( view.dom );
         return this;
     }
@@ -51,6 +56,7 @@ class BuildLogView {
     public function clear() {
         while( messages.firstChild != null )
             messages.removeChild( messages.firstChild );
+        numMessages = 0;
     }
 
     public function destroy() {
@@ -69,11 +75,16 @@ private class MessageView {
 
     public var dom(default,null) : DivElement;
 
-    function new( index : Int ) {
+    function new( index : Int, num : Int ) {
 
         dom = document.createDivElement();
         dom.setAttribute( 'tabindex', '$index' );
         dom.classList.add( 'message' );
+
+        var messageNum = document.createSpanElement();
+        messageNum.classList.add( 'num' );
+        messageNum.textContent = Std.string( num );
+        dom.appendChild( messageNum );
 
         dom.addEventListener( 'click', handleClick, false );
     }
@@ -89,9 +100,9 @@ private class LogMessageView extends MessageView {
 
     var text : String;
 
-    public function new( text : String, index : Int, ?status : String ) {
+    public function new( text : String, index : Int, ?status : String, num : Int ) {
 
-        super( index );
+        super( index, num );
         this.text = text;
 
         if( status != null ) dom.classList.add( status );
@@ -101,7 +112,6 @@ private class LogMessageView extends MessageView {
         //content.textContent = StringTools.htmlUnescape( text );
         content.textContent = text;
         dom.appendChild( content );
-
     }
 
     override function copyToClipboard() {
@@ -113,9 +123,9 @@ private class ErrorMessageView extends MessageView {
 
     var error : ErrorMessage;
 
-    public function new( error : ErrorMessage, index : Int ) {
+    public function new( error : ErrorMessage, index : Int, num : Int ) {
 
-        super( index );
+        super( index, num );
         this.error = error;
 
         dom.classList.add( 'error' );
@@ -137,7 +147,6 @@ private class ErrorMessageView extends MessageView {
         line.textContent = Std.string( error.line );
         dom.appendChild( line );
         line.onclick = function(_) open( error.line-1 );
-
 
         var pos = document.createAnchorElement();
         pos.classList.add( 'link' );

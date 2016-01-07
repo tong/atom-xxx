@@ -4,7 +4,7 @@
         'submenu': [
             'label': 'Haxe IDE'
             'submenu': [
-                { 'label': 'Toggle Server Log', 'command': 'haxe:toggle-server-log' }
+                { 'label': 'Toggle Server Log', 'command': 'haxe-ide:toggle-server-log' }
             ]
         ]
     }

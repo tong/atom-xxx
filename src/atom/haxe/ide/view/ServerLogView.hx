@@ -16,7 +16,7 @@ class ServerLogView {
     public function new() {
 
         dom = document.createDivElement();
-        dom.classList.add( 'debug-log', 'resizer' );
+        dom.classList.add( 'server-log', 'resizer' );
 
         messages = document.createDivElement();
         messages.classList.add( 'messages', 'scroller' );

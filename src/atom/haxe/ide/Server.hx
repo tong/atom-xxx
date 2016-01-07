@@ -51,7 +51,6 @@ class Server {
     }
 
     function handleData(e) {
-        //trace(e.toString());
         onMessage( e.toString() );
     }
 

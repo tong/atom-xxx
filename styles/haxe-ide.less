@@ -92,13 +92,15 @@
 	margin-left: .2em;
 	-webkit-font-smoothing: antialiased;
 	-webkit-transition: color 0.2s;
-	will-change: color, transform;
+	transition: color 0.2s;
+	//will-change: color, transform;
 }
 .haxe-status .haxeicon:before {
 	content: '\e805';
 }
 .haxe-status .haxeicon.active {
     -webkit-animation: spin 0.5s linear infinite forwards;
+    animation: spin 0.5s linear infinite forwards;
 	color: @text-color-highlight;
 }
 /*
@@ -136,6 +138,17 @@
 	color: @text-color-error !important;
 }
 
+.build-log .message .num {
+	padding-left: 6px;
+	-webkit-user-select: none;
+	cursor: default;
+	color: @text-color-subtle;
+}
+
+.build-log .message .content {
+	padding-left: 6px;
+}
+
 .build-log .message .link:hover {
 	cursor: pointer;
 	text-decoration: underline;
@@ -153,30 +166,31 @@
 }
 
 
+
 /* ----- ServerLogView ----- */
 
-.debug-log {
+.server-log {
     height: 100%;
-    max-height: 100%;
     min-height: 100%;
+    max-height: 100%;
     max-width: 600px;
     overflow-y: auto;
-    cursor: default;
     border-left: 1px solid @pane-item-border-color;
     padding-top: 3px;
     padding-bottom: 6px;
-}
-.debug-log .messages {
     font-family: 'Anonymous Pro', Inconsolata, Monaco, Consolas, 'Courier New', Courier;
     line-height: 12px;
+    cursor: default;
 }
-.debug-log .messages .message {
+.server-log .messages {
+}
+.server-log .messages .message {
     padding: 1px 4px 0px 4px;
 }
-.debug-log .messages .message:not(:last-child) {
+.server-log .messages .message:not(:last-child) {
     border-bottom: 1px dotted @pane-item-border-color;
 }
-.debug-log .messages .message.link:hover {
+.server-log .messages .message.link:hover {
     cursor: pointer;
     text-decoration: underline;
 }
