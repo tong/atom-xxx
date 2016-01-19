@@ -3,6 +3,7 @@ package atom.haxe.ide;
 import js.node.Fs;
 import atom.CompositeDisposable;
 import atom.haxe.ide.view.BuildLogView;
+import atom.haxe.ide.view.BuildStatsView;
 import atom.haxe.ide.view.StatusBarView;
 import atom.haxe.ide.view.ServerLogView;
 import haxe.Timer;
@@ -65,6 +66,7 @@ class AtomPackage {
     static var log : BuildLogView;
     static var statusbar : StatusBarView;
     static var serverLog : ServerLogView;
+    //static var buildStats : BuildStatsView;
 
     static var configChangeListener : Disposable;
 
@@ -75,6 +77,7 @@ class AtomPackage {
         statusbar = new StatusBarView();
         log = new BuildLogView();
         serverLog = new ServerLogView();
+        //buildStats = new BuildStatsView();
 
         if( savedState.hxmlFile != null ) {
             if( fileExists( savedState.hxmlFile ) ) {
@@ -180,7 +183,7 @@ class AtomPackage {
         Fs.readFile( hxmlFile, {encoding:'utf8'}, function(e,r){
 
             if( e != null ) {
-                Atom.notifications.addError( 'Failed to read hxml file : '+hxmlFile );
+                Atom.notifications.addError( 'Failed to read hxml file : $hxmlFile' );
                 return;
             }
 
@@ -207,7 +210,11 @@ class AtomPackage {
 
             build.onMessage = function(msg){
                 var lines = msg.split( '\n' );
-                for( line in lines ) log.message( line );
+                for( line in lines ) {
+                    if( line.length == 0 )
+                        continue;
+                    log.message( line );
+                }
                 log.show();
             }
 
@@ -236,27 +243,49 @@ class AtomPackage {
 
                         var err = haxeErrors[0];
                         var filePath = err.path.startsWith('/') ? err.path : dirPath+'/'+err.path;
+                        var line = err.line - 1;
                         var column =
                             if( err.lines != null ) err.lines.start;
                             else if( err.characters != null ) err.characters.start;
                             else err.character;
 
                         Atom.workspace.open( filePath, {
-                            initialLine: err.line - 1,
+                            initialLine: line,
                             initialColumn: column,
                             activatePane: true,
                             searchAllPanes : true
                         }).then( function(editor:TextEditor){
 
-                            //TODO texteditor decoration
+                            //editor.selectToEndOfWord();
+                            editor.selectWordsContainingCursors();
+                            //editor.setSelectedScreenRange( [line,column] );
+                            editor.scrollToCursorPosition();
+
+                            //TODO select error text in editor
+
+
+                            //TODO texteditor error decoration
+
+                            //Atom.views.getView(Atom.workspace).focus();
 
                             //var range = editor.getSelectedBufferRange();
-                            var range = new atom.Range( [3,0],[4,5] );
+                            //var range = new atom.Range( [3,0],[4,5] );
+                            //var range = new atom.Range( [0,0], [5,5] );
+                            //trace(editor);
+                            //var marker = editor.markBufferRange( range );
+
+                            //var params : Dynamic = {  type:'highlight' };
+                            //Reflect.setField( params, 'class', 'haxe-error-decoration' );
+                            //var decoration = editor.decorateMarker( marker, params );
+                            //var decoration = editor.decorateMarker( marker, untyped __javascript__("{type: 'line', class: 'haxe-error-line-class'}") );
+
+                            /*
                             var marker = editor.markBufferRange( range, { invalidate:'overlap' } );
                             var params : Dynamic = {  type:'line' };
                             Reflect.setField( params, 'class', 'haxe-error-decoration' );
                             // Why does the class fucking not apply ?????
                             var decoration = editor.decorateMarker( marker, params );
+                            */
                         });
                     }
 
@@ -329,7 +358,7 @@ class AtomPackage {
     }
 
     static function provideAutoCompletion() {
-        //trace("provideAutoCompletion");
+        trace("provideAutoCompletion");
         //if( hxml != null )
         //return new CompletionProvider();
         return null;
