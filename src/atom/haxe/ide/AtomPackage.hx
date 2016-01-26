@@ -194,16 +194,15 @@ class AtomPackage {
             //var filePath = hxmlFile.withoutDirectory();
 
             var tokens = haxe.Hxml.parseTokens( r );
-            var args = [ '--cwd', dirPath ].concat( tokens );
+            var args = [ '--cwd', dirPath ];
             if( server.running ) {
-
                 //TODO why not write directly to stdin of server process ?
                 //server.stdin.write();
-
                 args.push( '--connect' );
                 args.push( Std.string( server.port ) );
             }
             //args.push('--times'); //TODO
+            args = args.concat( tokens );
             //trace(args);
 
             var build = new Build( Atom.config.get( 'haxe-ide.haxe_path' ) );
