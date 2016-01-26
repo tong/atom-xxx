@@ -60,7 +60,7 @@ class CompletionProvider {
 
                 trace( 'fieldCompletion '+pos );
 
-                //saveForCompletion();
+                saveForCompletion();
 
                 fieldCompletion( pos, function(xml){
 
@@ -134,6 +134,8 @@ class CompletionProvider {
         var fileName = Path.basename( path );
         var tmpFileName = '.' + fileName;
         var tmpFilePath = Path.join( filePath, tmpFileName );
+        //trace(path);
+        //trace(tmpFilePath);
         Fs.createReadStream( path ).pipe( Fs.createWriteStream( tmpFilePath ) );
     }
 
@@ -141,7 +143,7 @@ class CompletionProvider {
 
         var args = [
             '--cwd', path,
-            '--connect', Std.string(7000),
+            //'--connect', Std.string(7000),
             '--display', 'App.hx@$pos', '-D', 'display-details'
         ];
         //trace(args);
@@ -162,6 +164,7 @@ class CompletionProvider {
         });
         hx.on( 'close', function(code:Int) {
             //trace( 'child process exited with code ' + code );
+            //trace(result);
             switch code {
             case 0:
             //var xml = try Xml.parse( result ).firstElement() catch(e:Dynamic) {
