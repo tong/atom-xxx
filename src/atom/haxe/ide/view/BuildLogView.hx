@@ -134,19 +134,9 @@ private class ErrorMessageView extends MessageView {
         icon.classList.add( 'icon', 'icon-bug' );
         dom.appendChild( icon );
 
-        var path = document.createAnchorElement();
-        path.classList.add( 'link' );
-        path.textContent = error.path;
-        dom.appendChild( path );
-        path.onclick = function(_) open();
-
+        link( error.path );
         span( ':' );
-
-        var line = document.createAnchorElement();
-        line.classList.add( 'link' );
-        line.textContent = Std.string( error.line );
-        dom.appendChild( line );
-        line.onclick = function(_) open( error.line-1 );
+        link( Std.string( error.line ), error.line-1 );
 
         var pos = document.createAnchorElement();
         pos.classList.add( 'link' );
@@ -160,24 +150,12 @@ private class ErrorMessageView extends MessageView {
             span( ': lines ' );
             pos.textContent = error.lines.start+'-'+error.lines.end;
         }
+        pos.onclick = function(_) open( error.line-1, error.characters.start-1 );
         dom.appendChild( pos );
-
-        /*
-        span( ': characters ' );
-
-        var pos = document.createAnchorElement();
-        pos.classList.add( 'link' );
-        pos.textContent = error.pos.start+'-'+error.pos.end;
-        dom.appendChild( pos );
-        pos.onclick = function(_) open( error.line-1, error.pos.start-1 );
-        */
 
         span( ': ' );
 
-        var content = document.createSpanElement();
-        content.classList.add( 'content' );
-        content.textContent = error.content;
-        dom.appendChild( content );
+        span( error.content, ['content'] );
     }
 
     override function copyToClipboard() {
@@ -185,20 +163,36 @@ private class ErrorMessageView extends MessageView {
     }
 
     function open( line : Null<Int> = null, column : Null<Int> = null ) {
-
-        //var editor = Atom.workspace.getActiveTextEditor();
-        //trace(untyped editor.buffer.file.path);
-        //trace(error.path);
-        //editor.selectAll();
-
         Atom.workspace.open( error.path, {
             initialLine: line,
-            initialColumn: column
+            initialColumn: column,
+            activatePane: true,
+            searchAllPanes : true
+        }).then( function(editor:TextEditor){
+            editor.scrollToCursorPosition();
+            /*
+            if( column == null ) {
+                //TODO select line
+            }
+            */
+            //editor.selectToEndOfWord();
+            //editor.selectWordsContainingCursors();
+            //editor.setSelectedScreenRange( [line,column] );
         });
     }
 
-    function span( text : String ) {
+    function link( text : String, ?line : Null<Int> ) : AnchorElement {
+        var e = document.createAnchorElement();
+        e.classList.add( 'link' );
+        e.textContent = text;
+        dom.appendChild( e );
+        e.onclick = function(_) open( line );
+        return e;
+    }
+
+    function span( text : String, ?classes : Array<String> ) {
         var e = document.createSpanElement();
+        if( classes != null ) for( c in classes ) e.classList.add(c);
         e.textContent = text;
         dom.appendChild( e );
     }
