@@ -121,25 +121,11 @@ class AtomPackage {
             serverLog.scrollToBottom(); //TODO doesn't work
         }
 
-        var startDelay = Atom.config.get( 'haxe-ide.server_startdelay' );
-        Timer.delay(function(){
-            server.start(
-                Atom.config.get( 'haxe-ide.haxe_path' ),
-                Atom.config.get( 'haxe-ide.server_port' ),
-                Atom.config.get( 'haxe-ide.server_host' )
-            );
-        }, startDelay * 1000 );
-
         subscriptions = new CompositeDisposable();
         subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:build', build ) );
+        subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:server-start', function(e) startServer() ) );
+        subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(e) stopServer() ) );
         subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe-ide:toggle-server-log', function(_) serverLog.toggle() ) );
-
-        /*
-        Atom.commands.add( 'atom-workspace', 'haxe-ide:toggle-server-log', function(e){
-            trace("TOFGGLLE");
-            serverLog.toggle();
-        });
-        */
 
         configChangeListener = Atom.config.onDidChange( 'haxe-ide', {}, function(e){
             //TODO check which option has changed
@@ -147,6 +133,13 @@ class AtomPackage {
             server.start( e.newValue.haxe_path, e.newValue.server_port, e.newValue.server_host );
         });
 
+        Timer.delay(function(){
+            server.start(
+                Atom.config.get( 'haxe-ide.haxe_path' ),
+                Atom.config.get( 'haxe-ide.server_port' ),
+                Atom.config.get( 'haxe-ide.server_host' )
+            );
+        }, Atom.config.get( 'haxe-ide.server_startdelay' ) * 1000 );
     }
 
     static function deactivate() {
@@ -162,6 +155,20 @@ class AtomPackage {
         return {
             hxmlFile: hxmlFile
         };
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+
+    static function startServer() {
+        server.start(
+            Atom.config.get( 'haxe-ide.haxe_path' ),
+            Atom.config.get( 'haxe-ide.server_port' ),
+            Atom.config.get( 'haxe-ide.server_host' )
+        );
+    }
+
+    static function stopServer() {
+        server.stop();
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -357,10 +364,10 @@ class AtomPackage {
     }
 
     static function provideAutoCompletion() {
-        trace("provideAutoCompletion");
+        //trace("provideAutoCompletion");
         //if( hxml != null )
-        //return new CompletionProvider();
-        return null;
+        return new CompletionProvider();
+        //return null;
     }
 
     ////////////////////////////////////////////////////////////////////////////

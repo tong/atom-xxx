@@ -4,6 +4,9 @@
         'submenu': [
             'label': 'Haxe IDE'
             'submenu': [
+                { 'label': 'Start Server', 'command': 'haxe:server-start' },
+                { 'label': 'Stop Server', 'command': 'haxe:server-stop' },
+                { type: 'separator' },
                 { 'label': 'Toggle Server Log', 'command': 'haxe-ide:toggle-server-log' }
             ]
         ]
