@@ -1,91 +1,169 @@
 package atom.haxe.ide;
 
+import js.Error;
 import js.Promise;
 import js.Node;
+import js.Node.process;
+import js.node.Buffer;
 import js.node.ChildProcess;
 import js.node.Fs;
 import js.node.Path;
+import sys.FileSystem;
 import atom.TextEditor;
+import atom.autocomplete.Request;
+import atom.autocomplete.Suggestion;
+import atom.autocomplete.SuggestionInsert;
 
+using haxe.io.Path;
 using StringTools;
 
-/**
-    https://github.com/atom/autocomplete-plus/wiki/Provider-API
-    https://github.com/atom/autocomplete-plus/pull/334
+/*
+private typedef Request = {
+    var editor : TextEditor;
+    var bufferPosition : Point;
+    var scopeDescriptor : String;
+    var prefix : String;
+    var activatedManually : Bool;
+}
 
-    https://github.com/snowkit/atom-haxe/tree/e9ccee9a61fd39d4a761afd13b3841f3dbcd66db/lib/completion
+private typedef Suggestion = {
+    var text : String; // OR
+    var snippet : String;
+    @:optional var displayText : String;
+    @:optional var replacementPrefix : String;
+    @:optional var type : String;
+    @:optional var leftLabel : String;
+    @:optional var leftLabelHTML : String;
+    @:optional var rightLabel : String;
+    @:optional var rightLabelHTML : String;
+    @:optional var className : String;
+    @:optional var iconHTML : String;
+    @:optional var description : String;
+    @:optional var descriptionMoreURL : String;
+};
 
+private typedef SuggestionInsert = {
+    var editor : TextEditor;
+    var triggerPosition : Point;
+    var suggestion : Suggestion;
+}
 */
-@:keep
-@:expose
+
+private typedef TempFileSaveInfo = {
+    var fp : String;
+    var cp : String;
+    var content : String;
+};
+
 class CompletionProvider {
 
-    static var completionRegex = ~/[A-Z_0-9]+$/i;
+    //public static inline var TMP = '.tmp';
 
-    public var selector = '.source.haxe';
-    public var disableForSelector = '.source.haxe .comment';
+    static var REGEX_ENDS_WITH_DOT_IDENTIFIER = ~/\.([a-zA-Z_0-9]*)$/;
+    //static var REGEX_ENDS_WITH_DOT_NUMBER = ~/[^a-zA-Z0-9_\]\)]([\.0-9]+)$/;
+    //static var REGEX_ENDS_WITH_DOT_NUMBER = ~/^.*\.[0-9]*$/;
+    //static var REGEX_ENDS_WITH_PARTIAL_PACKAGE_DECL = ~/[^a-zA-Z0-9_]package\s+([a-zA-Z_0-9]+(\.[a-zA-Z_0-9]+)*)\.([a-zA-Z_0-9]*)$/;
+    //static var REGEX_BEGINS_WITH_KEY = ~/^([a-zA-Z0-9_]+)\s*:/;
+    static var REGEX_ENDS_WITH_ALPHANUMERIC = ~/([A-Za-z0-9_]+)$/;
 
-    public var inclusionPriority = 1;
-    public var excludeLowerPriority = true;
-
-    //public var hxml : String;
-    var editor : TextEditor;
-
-    public var path = '/home/tong/dev/temp/';
-    public var hxml = 'build.hxml';
+    @:keep @:expose public var selector(default,null) = '.source.haxe';
+    @:keep @:expose public var disableForSelector(default,null) = '.source.haxe .comment';
+    @:keep @:expose public var inclusionPriority = 2;
+    @:keep @:expose public var excludeLowerPriority = false;
+    //@:keep @:expose public var prefixes = ['.','('];
 
     public function new() {}
 
-    public function getSuggestions( req ) {
-
-        //trace(req);
-        //var activatedManually = req.activatedManually;
-
-        editor = req.editor;
-
-        var bufferPosition = req.bufferPosition;
-        var prefix = req.prefix;
-        var scopeDescriptor = req.scopeDescriptor;
-        var pretext = editor.getTextInBufferRange( [ [0,0], bufferPosition ] );
-        var pos = pretext.length;
-        //var mode
-        //var filePath = editor.getPath();
+    @:keep
+    @:expose
+    public function getSuggestions( req : Request ) {
 
         return new Promise( function(resolve,reject) {
 
-            //reject( 'reason' );
-            //resolve( null );
+            if( AtomPackage.hxmlFile == null ) {
+                reject( 'no hxml file specified' );
+                return;
+            }
 
-            if( pretext.charAt( pretext.length-1 ) == '.' ) {
+            //var hxmlFile = AtomPackage.hxmlFile.withoutDirectory();
+            //trace(req.prefix);
+            //var activatedManually = req.activatedManually;
+            var editor = req.editor;
+            var bufpos = req.bufferPosition.toArray();
+            var pretext = editor.getTextInBufferRange( [[0,0], bufpos] );
+            var index = pretext.length;
+            var path = editor.getPath();
+            var cwd = AtomPackage.hxmlFile.directory();
+            //var file = path.withoutDirectory();
+            var mode = null;
+            //var prefix = req.prefix;
+            //var scopeDescriptor = req.scopeDescriptor;
+            //var text = editor.getText();
+            //var pos = Buffer._byteLength( pretext.substr( 0, index ), 'utf8' );
+            //trace(path);
+            //trace(file);
+            //trace(cwd);
+            //trace(path);
 
-                trace( 'fieldCompletion '+pos );
+            var posInfo = getPositionInfo( editor, bufpos, index );
+            //var posInfo = getPositionInfo( pretext, index );
+            if( posInfo == null )
+                return resolve([]);
+            if( posInfo.mode != null ) mode = posInfo.mode;
 
-                saveForCompletion();
+            var mode_saveForCompletion = true;
 
-                fieldCompletion( pos, function(xml){
-
-                    if( xml == null ) {
-                        resolve( null );
-                        return;
+            if( mode_saveForCompletion ) {
+                //TODO save temp file for completion
+                var saveInfo = saveForCompletion( editor, path );
+                //Completion.fetch(  hxmlFile, saveInfo.file, posInfo.index, mode, [],
+                Completion.fetch( AtomPackage.hxmlFile.directory(), AtomPackage.hxmlFile.withoutDirectory(), saveInfo.file, posInfo.index, mode, [],
+                    function(xml){
+                        resolve( parseSuggestions( xml ) );
+                    },
+                    function(e){
+                        trace(e);
                     }
+                );
+            } else {
+                //TODO
+            }
 
-                    var suggestions = new Array<Dynamic>();
+            //Sys.command( 'haxe', ['-cp',AtomPackage.path+'/src','--macro','atom.haxe.ide.HaxeCode.extractPackage()'] );
 
+            //lastRequest = {};
+
+            /*
+            //var pack = code.extract_package( text );
+            //trace(pack);
+            var dirPath = cwd+'/'+TMP;
+            var filePath = dirPath+'/'+path.withoutDirectory();
+            if( !FileSystem.exists( dirPath ) ) Fs.mkdirSync( dirPath );
+            Fs.writeFileSync( filePath, content );
+            var classPath = null;
+            return {
+                fp: filePath,
+                cp: classPath,
+                content: content
+            };
+            */
+
+            /*
+            Completion.fetch( cwd, hxmlFile, file, posInfo.index, mode, [],
+                function(xml){
+                    var suggestions = new Array<Suggestion>();
                     for( e in xml.elements() ) {
-
                         var isVar = e.get( 'k' ) == 'var';
                         var name = e.get( 'n' );
                         var type : String = null;
                         var doc : String = null;
                         var displayName = name;
-
                         for( e in e.elements() ) {
                             switch e.nodeName {
                             case 't': type = e.firstChild().nodeValue;
                             case 'd': doc = e.firstChild().nodeValue;
                             }
                         }
-
                         if( isVar ) {
                             displayName += ' : '+type;
                         } else {
@@ -98,8 +176,7 @@ class CompletionProvider {
                             }
                             displayName += '( '+args.join(', ')+' ) : '+returnType;
                         }
-
-                        var suggestion = {
+                        suggestions.push( {
                             //iconHTML: '<i class="icon-bug"></i>',
                             type: isVar ? 'property' : 'method',
                             text : name,
@@ -108,27 +185,89 @@ class CompletionProvider {
                             //leftLabel: type,
                             //description: 'DDDDDDDDDDDDD',
                             //rightLabel: type
-                        };
-
-                        suggestions.push( suggestion );
+                        } );
                     }
-
                     resolve( suggestions );
-                });
-            }
+                },
+                function(e){
+                    trace(e);
+                    reject(e);
+                }
+            );
+            */
         });
     }
 
     public function dispose() {
         trace("DISPOSE");
+        //TODO
     }
 
-    public function onDidInsertSuggestion( opt ) : Array<Dynamic> {
-        trace(opt);
+    @:keep
+    @:expose
+    public function onDidInsertSuggestion( suggestion : SuggestionInsert ) {
+        //trace(suggestion);
+        //TODO
+    }
+
+    function getPositionInfo( editor : TextEditor, pos : Array<Int>, index : Int ) : { index : Int, prefix : String, ?mode : String } {
+
+        var line = editor.getTextInBufferRange( [[pos[0],0], pos] );
+
+        //TODO check for comments and strings
+
+        if( REGEX_ENDS_WITH_DOT_IDENTIFIER.match( line ) ) {
+            trace("DOT PREFIX");
+            var prefix = REGEX_ENDS_WITH_DOT_IDENTIFIER.matched(1);
+            /*
+            // Don't query when writing a number containing dots
+            if( REGEX_ENDS_WITH_DOT_NUMBER.match( ' '+line ) ) {
+                trace("REGEX_ENDS_WITH_DOT_NUMBER");
+                return null;
+            }
+            // Don't query haxe when writing a package declaration
+            if( REGEX_ENDS_WITH_PARTIAL_PACKAGE_DECL.match( ' '+line ) ) {
+                trace("REGEX_ENDS_WITH_PARTIAL_PACKAGE_DECL");
+                return null;
+            }
+            */
+            return {
+                index:  index - prefix.length,
+                prefix: prefix
+            };
+        }
+
+        if( REGEX_ENDS_WITH_ALPHANUMERIC.match( line ) ) {
+            var prefix = REGEX_ENDS_WITH_ALPHANUMERIC.matched(1);
+            return {
+                index: index - prefix.length,
+                prefix: prefix,
+                mode: 'toplevel'
+            };
+        }
         return null;
     }
 
-    function saveForCompletion() {
+    function saveForCompletion( editor : TextEditor, file : String ) {
+
+        var filePath = js.node.Path.dirname( file );
+        var fileName = js.node.Path.basename( file );
+        var tmpName = '.' + fileName;
+        var tempFile = Path.join( [filePath,tmpName] );
+
+        sys.io.File.copy( file, tempFile );
+
+        var buf = new Buffer( editor.getText(), 'utf8' );
+        var freal = Fs.openSync( file, 'w' );
+        Fs.writeSync( freal, buf, 0, buf.length, 0);
+        Fs.closeSync( freal );
+        freal = null;
+
+        return {
+            tempfile: tempFile,
+            file: file
+        }
+        /*
         var path = editor.getPath();
         var filePath = Path.dirname( path );
         var fileName = Path.basename( path );
@@ -137,48 +276,77 @@ class CompletionProvider {
         //trace(path);
         //trace(tmpFilePath);
         Fs.createReadStream( path ).pipe( Fs.createWriteStream( tmpFilePath ) );
+        */
     }
 
-    function fieldCompletion( pos : Int, callback : Xml->Void ) {
+    /*
+    function saveTempCompletionFile( path : String, content : String ) : TempFileSaveInfo {
 
-        var args = [
-            '--cwd', path,
-            //'--connect', Std.string(7000),
-            '--display', 'App.hx@$pos', '-D', 'display-details'
-        ];
-        //trace(args);
+        //var pack = code.extract_package( text );
+        //trace(pack);
 
-        var options = {
-            //cwd: path,
+        var dirPath = cwd+'/'+TMP;
+        var filePath = dirPath+'/'+path.withoutDirectory();
+
+        if( !FileSystem.exists( dirPath ) ) Fs.mkdirSync( dirPath );
+        Fs.writeFileSync( filePath, content );
+
+        var classPath = null;
+
+        return {
+            fp: filePath,
+            cp: classPath,
+            content: content
         };
-        var result = '';
-        var hx = ChildProcess.spawn( 'haxe', args, options );
-        /*
-        hx.stdout.on( 'data', function(data) {
-            trace( 'stdout: ' +  data.toString('utf-8') );
-        });
-        */
-        hx.stderr.on( 'data', function(data) {
-            //trace('#####################################');
-            result += ''+data.toString();
-        });
-        hx.on( 'close', function(code:Int) {
-            //trace( 'child process exited with code ' + code );
-            //trace(result);
-            switch code {
-            case 0:
-            //var xml = try Xml.parse( result ).firstElement() catch(e:Dynamic) {
-                var xml = try haxe.xml.Parser.parse( result ).firstElement() catch(e:Dynamic) {
-                    trace(e);
-                    //trace(result);
-                    callback( null );
-                    return;
+    }
+    */
+
+
+    function parseSuggestions( xml : Xml ) : Array<Suggestion> {
+        var suggestions = new Array<Suggestion>();
+        for( e in xml.elements() ) {
+
+            var isVar = e.get( 'k' ) == 'var';
+            var name = e.get( 'n' );
+            var type : String = null;
+            var doc : String = null;
+            var displayName = name;
+
+            for( e in e.elements() ) {
+                switch e.nodeName {
+                case 't': type = e.firstChild().nodeValue;
+                case 'd': doc = e.firstChild().nodeValue;
                 }
-                callback( xml );
-            default:
-                callback( null );
             }
-        });
+
+            if( isVar ) {
+                displayName += ' : '+type;
+            } else {
+                var parts = type.split( '->' );
+                var args = new Array<String>();
+                var returnType = parts.pop();
+                for( p in parts ) {
+                    //name += p.trim();
+                    args.push( p.trim() );
+                }
+                displayName += '( '+args.join(', ')+' ) : '+returnType;
+            }
+
+            var suggestion = {
+                //iconHTML: '<i class="icon-bug"></i>',
+                type: isVar ? 'property' : 'method',
+                text : name,
+                displayText: displayName,
+                //replacementPrefix: 'F'
+                //leftLabel: type,
+                //description: 'DDDDDDDDDDDDD',
+                //rightLabel: type
+            };
+
+            suggestions.push( suggestion );
+        }
+
+        return suggestions;
     }
 
 }

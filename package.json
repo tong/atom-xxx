@@ -2,7 +2,7 @@
     "name": "haxe-ide",
     "main": "./lib/haxe-ide",
     "version": "0.2.3",
-    "description": "Haxe IDE",
+    "description": "Haxe Development Environment",
     "keywords": ["haxe","ide"],
     "consumedServices": {
         "status-bar": { "versions": { "^1.0.0": "consumeStatusBar" } }

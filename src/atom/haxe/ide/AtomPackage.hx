@@ -1,7 +1,10 @@
 package atom.haxe.ide;
 
+import js.Browser.console;
 import js.node.Fs;
 import atom.CompositeDisposable;
+import atom.haxe.ide.service.HaxeBuildService;
+import atom.haxe.ide.service.HaxeServerService;
 import atom.haxe.ide.view.BuildLogView;
 import atom.haxe.ide.view.BuildStatsView;
 import atom.haxe.ide.view.StatusBarView;
@@ -59,14 +62,14 @@ class AtomPackage {
         */
     };
 
+    public static var hxmlFile(default,null) : String;
+
     static var server : atom.haxe.ide.Server;
     static var subscriptions : CompositeDisposable;
-    static var hxmlFile : String;
 
     static var log : BuildLogView;
     static var statusbar : StatusBarView;
     static var serverLog : ServerLogView;
-    //static var buildStats : BuildStatsView;
 
     static var configChangeListener : Disposable;
 
@@ -77,7 +80,6 @@ class AtomPackage {
         statusbar = new StatusBarView();
         log = new BuildLogView();
         serverLog = new ServerLogView();
-        //buildStats = new BuildStatsView();
 
         if( savedState.hxmlFile != null ) {
             if( fileExists( savedState.hxmlFile ) ) {
@@ -91,7 +93,6 @@ class AtomPackage {
                 */
                 //trace(new atom.Directory('/home/tong/dev/tool/atom-haxe-ide/'));
                 //js.node.Fs.watchFile('/home/tong/dev/tool/atom-haxe-ide/build.hxml',{persistent:true},handleFilechange);
-
                 statusbar.setBuildPath( hxmlFile );
             }
         }
@@ -105,14 +106,14 @@ class AtomPackage {
 
         server = new atom.haxe.ide.Server();
         server.onStart = function(){
-            trace( 'Haxe server started' );
+            console.info( 'Haxe server started' );
             statusbar.setServerStatus( server.exe, server.host, server.port, server.running );
         }
         server.onStop = function( code : Int ){
-            trace( 'Haxe server stopped ($code)' );
+            console.info( 'Haxe server stopped ($code)' );
         }
         server.onError = function(msg){
-            trace( 'Haxe server error: $msg' );
+            console.warn( msg );
             //Atom.notifications.addError( msg );
         }
         server.onMessage = function(msg){
@@ -255,6 +256,8 @@ class AtomPackage {
                             else if( err.characters != null ) err.characters.start;
                             else err.character;
 
+                        //TODO check if error at std and avoid opening if configured
+
                         Atom.workspace.open( filePath, {
                             initialLine: line,
                             initialColumn: column,
@@ -266,9 +269,6 @@ class AtomPackage {
                             editor.selectWordsContainingCursors();
                             //editor.setSelectedScreenRange( [line,column] );
                             editor.scrollToCursorPosition();
-
-                            //TODO select error text in editor
-
 
                             //TODO texteditor error decoration
 
@@ -315,7 +315,7 @@ class AtomPackage {
 
     ////////////////////////////////////////////////////////////////////////////
 
-    public static function provideServerService() {
+    static function provideServerService() : HaxeServerService {
         return {
             getStatus: function(){
                 return { exe:server.exe, host:server.host, port:server.port, running:server.running };
@@ -332,7 +332,7 @@ class AtomPackage {
         };
     }
 
-    public static function provideBuildService() {
+    static function provideBuildService() : HaxeBuildService {
         return {
             build : function( args:Array<String>, onMessage : String->Void, onError : String->Void, onSuccess : Void->Void ) {
 
@@ -343,7 +343,6 @@ class AtomPackage {
 
                 //TODO
                 //_build();
-
                 //log.clear();
 
                 //var startTime = now();
@@ -354,7 +353,6 @@ class AtomPackage {
                     onError( msg );
                 };
                 build.onSuccess = function() {
-                    //trace(now()-startTime);
                     //log.scrollToBottom();
                     onSuccess();
                 }
@@ -364,7 +362,6 @@ class AtomPackage {
     }
 
     static function provideAutoCompletion() {
-        //trace("provideAutoCompletion");
         //if( hxml != null )
         return new CompletionProvider();
         //return null;
