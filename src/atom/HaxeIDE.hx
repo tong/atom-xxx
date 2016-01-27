@@ -29,15 +29,17 @@ class HaxeIDE {
     static inline function __init__() untyped module.exports = atom.HaxeIDE;
 
     static var config = {
+
         haxe_path: {
-            "title": "Haxe executable path",
+            "title": "Haxe path",
             "description": "Path to haxe executable",
             "type": "string",
             "default": "haxe"
         },
+
         server_port: {
             "title": "Haxe server port",
-            "description": "The port number the haxe server will wait on.",
+            "description": "The port number the haxe server will listen.",
             "type": "integer",
             "default": 7000
         },
@@ -48,12 +50,13 @@ class HaxeIDE {
             "default": "127.0.0.1"
         },
         server_startdelay:{
-            "title": 'Activation start delay',
+            "title": 'Haxe server activation delay',
             "description": 'The delay in seconds before starting the haxe server.',
             "type": 'integer',
             "minimum": 0,
             "default": 3
-        }
+        },
+
         /*
         build_server_enabled: {
             "title": "Enable/Disable haxe build server",
@@ -61,25 +64,46 @@ class HaxeIDE {
             "type": "boolean",
             "default": true
         }
-        log_show_number: {
+
+        build_selectors: {
+            "title": 'Build file scopes',
+            "description": 'When triggering a build command, only file scope in this list will trigger.',
+            "type": 'string',
+            "default": 'source.haxe, source.hxml'
+        },
+
+        buildlog_line_number: {
             "title": "Show Line Numbers",
             "description": "Show line numbers in build log",
             "type": "boolean",
             "default": true
+        }
+
+        haxelib_path: {
+            title: 'Haxelib executable path',
+            description: 'Only needed if you have configured a custom Haxelib location.',
+            type: 'string',
+            default:'haxelib'
+        },
+
+        autocomplete_enabled: {
+            "title": "Autocomplete",
+            "description": "Enables/Disables haxe autocompletion",
+            "type": "boolean",
+            "default": false
         }
         */
     };
 
     public static var state(default,null) : atom.haxe.ide.State;
     public static var server(default,null) : atom.haxe.ide.Server;
-    //public static var hxmlFile(default,null) : String;
 
     static var subscriptions : CompositeDisposable;
     static var configChangeListener : Disposable;
 
     static var log : BuildLogView;
     static var statusbar : StatusBarView;
-    static var serverLog : ServerLogView;
+    static var serverlog : ServerLogView;
 
     static function activate( savedState ) {
 
@@ -95,7 +119,8 @@ class HaxeIDE {
 
         statusbar = new StatusBarView();
         log = new BuildLogView();
-        serverLog = new ServerLogView();
+        serverlog = new ServerLogView();
+        serverlog.show();
 
         /*
         if( savedState.hxmlFile != null ) {
@@ -127,16 +152,14 @@ class HaxeIDE {
             //notifications.addError( msg );
         }
         server.onMessage = function(msg){
-            //trace(msg);
-            serverLog.add( msg );
-            serverLog.scrollToBottom(); //TODO doesn't work
+            serverlog.add( msg );
         }
 
         subscriptions = new CompositeDisposable();
         subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:build', build ) );
         subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:server-start', function(e) startServer() ) );
         subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(e) stopServer() ) );
-        subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe-ide:toggle-server-log', function(_) serverLog.toggle() ) );
+        subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe-ide:toggle-server-log', function(_) serverlog.toggle() ) );
 
         configChangeListener = Atom.config.onDidChange( 'haxe-ide', {}, function(e){
             //TODO check which option has changed
@@ -162,7 +185,7 @@ class HaxeIDE {
 
         log.destroy();
         statusbar.destroy();
-        serverLog.destroy();
+        serverlog.destroy();
     }
 
     static function serialize() {
@@ -362,9 +385,10 @@ class HaxeIDE {
     }
 
     static function provideAutoCompletion() {
-        //if( hxml != null )
-        //return new CompletionProvider();
-        return null;
+        return if( Atom.config.get( 'haxe-ide.autocomplete_enabled' ) )
+            new atom.haxe.ide.CompletionProvider();
+        else
+            null;
     }
 
     ////////////////////////////////////////////////////////////////////////////

@@ -80,7 +80,9 @@ class CompletionProvider {
 
         return new Promise( function(resolve,reject) {
 
-            if( AtomPackage.hxmlFile == null ) {
+            var state = HaxeIDE.state;
+
+            if( state.hxml == null ) {
                 reject( 'no hxml file specified' );
                 return;
             }
@@ -93,7 +95,7 @@ class CompletionProvider {
             var pretext = editor.getTextInBufferRange( [[0,0], bufpos] );
             var index = pretext.length;
             var path = editor.getPath();
-            var cwd = AtomPackage.hxmlFile.directory();
+            var cwd = state.hxml.directory();
             //var file = path.withoutDirectory();
             var mode = null;
             //var prefix = req.prefix;
@@ -117,7 +119,7 @@ class CompletionProvider {
                 //TODO save temp file for completion
                 var saveInfo = saveForCompletion( editor, path );
                 //Completion.fetch(  hxmlFile, saveInfo.file, posInfo.index, mode, [],
-                Completion.fetch( AtomPackage.hxmlFile.directory(), AtomPackage.hxmlFile.withoutDirectory(), saveInfo.file, posInfo.index, mode, [],
+                Completion.fetch( state.hxml.directory(), state.hxml.withoutDirectory(), saveInfo.file, posInfo.index, mode, [],
                     function(xml){
                         if( xml != null ) {
                             resolve( parseSuggestions( xml ) );

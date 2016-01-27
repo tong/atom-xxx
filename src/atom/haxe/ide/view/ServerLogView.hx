@@ -4,6 +4,7 @@ import js.Browser.document;
 import js.Browser.window;
 import js.html.DivElement;
 import js.html.SpanElement;
+import Atom.workspace;
 
 using StringTools;
 
@@ -29,20 +30,63 @@ class ServerLogView {
     }
 
     public function add( text : String ) {
+
         for( line in text.split( '\n' ) ) {
-            if( line.length == 0 )
+
+            if( (line = line.trim()).length == 0 )
                 continue;
+
+            var firstWord = line.substr( 0, line.indexOf(' ') ).toLowerCase();
+            if( firstWord == '>' ) firstWord = 'error';
+
             var e = document.createDivElement();
-            e.classList.add( 'message' );
-            e.textContent = line;
-            if( line.startsWith( 'Parsed ' ) ) {
-                e.classList.add( 'link' );
-                e.onclick = function(e){
-                    if( !e.ctrlKey )
-                        Atom.workspace.open( line.substr(7) );
-                }
-            }
+            e.classList.add( 'message', firstWord );
             messages.appendChild( e );
+
+            switch firstWord {
+            case 'parsed':
+
+                var title = document.createSpanElement();
+                title.textContent = 'Parsed';
+                e.appendChild( title );
+
+                var link = document.createSpanElement();
+                link.classList.add( 'link' );
+                link.onclick = function(e){
+                    if( !e.ctrlKey ) workspace.open( line.substr(7) );
+                }
+                link.textContent = line.substr(7).htmlEscape();
+                e.appendChild( link );
+
+            case 'processing':
+
+                var title = document.createDivElement();
+                title.textContent = 'Processing Arguments';
+                e.appendChild( title );
+
+                var str = line.substring( line.indexOf('[')+1, line.length-1 );
+                var args = str.split( ',' );
+                var i = 0;
+                while( i < args.length ) {
+                    var text = args[i];
+                    var next = args[i+1];
+                    if( !next.startsWith( '-' ) ) {
+                        text += ' $next';
+                        i++;
+                    }
+                    var child = document.createDivElement();
+                    child.textContent = text.htmlEscape();
+                    child.classList.add( 'param' );
+                    e.appendChild( child );
+                    i++;
+                }
+            case 'time':
+                e.textContent = line.htmlEscape();
+                scrollToBottom();
+
+            default:
+                e.textContent = line.htmlEscape();
+            }
         }
     }
 
@@ -65,7 +109,7 @@ class ServerLogView {
     }
 
     public inline function scrollToBottom() {
-        messages.scrollTop = messages.scrollHeight;
+        element.scrollTop = messages.scrollHeight;
     }
 
     public function destroy() {
@@ -77,12 +121,11 @@ class ServerLogView {
         if( e.ctrlKey ) {
             e.preventDefault();
             e.stopPropagation();
-            hide();
+            clear();
         }
     }
 
     function handleContextMenu(e) {
         hide();
     }
-
 }

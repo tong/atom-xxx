@@ -170,10 +170,12 @@
 /* ----- ServerLogView ----- */
 
 .server-log {
+
     height: 100%;
     min-height: 100%;
-    max-height: 100%;
-    max-width: 600px;
+	max-height: 100%;
+	min-width: 200px;
+	max-width: 600px;
     overflow-y: auto;
     border-left: 1px solid @pane-item-border-color;
     padding-top: 3px;
@@ -181,25 +183,71 @@
     font-family: 'Anonymous Pro', Inconsolata, Monaco, Consolas, 'Courier New', Courier;
     line-height: 12px;
     cursor: default;
-}
-.server-log .messages {
-}
-.server-log .messages .message {
-    padding: 1px 4px 0px 4px;
-}
-.server-log .messages .message:not(:last-child) {
-    border-bottom: 1px dotted @pane-item-border-color;
-}
-.server-log .messages .message.link:hover {
-    cursor: pointer;
-    text-decoration: underline;
-}
 
+	.messages {
+
+		overflow:auto;
+    	white-space:pre-wrap;
+
+		.message {
+			padding: 1px 4px 0px 6px;
+			white-space: pre-wrap;
+			color: @text-color;
+		}
+
+		.message:not(:last-child) {
+			border-bottom: 1px dotted @pane-item-border-color;
+		}
+
+		.message.processing,
+		.message.reading,
+		.message.time,
+		.message.waiting,
+		.message.client {
+			color: @text-color-info;
+		}
+
+		.message.error {
+			color: @text-color-error;
+			font-weight: bold;
+		}
+
+		.message.reusing,
+		.message.parsed {
+			color: @text-color-subtle;
+		}
+
+		.message.parsed {}
+		.message.parsed .link {
+			cursor: pointer;
+			margin-left: 4px;
+		}
+		.message.parsed .link:hover {
+			color: @text-color-highlight;
+			text-decoration: underline;
+		}
+
+		.message.processing {}
+		.message.processing div.param {
+			margin-left: 16px;
+		}
+
+		.message.time {
+			border-bottom: 4px solid @pane-item-border-color;
+		}
+
+		/*
+		.message.cached {}
+		.message.stats {}
+		*/
+	}
+}
 
 /* ----- TextEditor Decoration ----- */
 
 //TODO
 
+/*
 .line.haxe-error-decoration {
 	background-color: #ff0000 !important;
 	color: #fff;
@@ -210,3 +258,4 @@
 	background-color: #ff0000 !important;
 	color: #fff000 !important;
 }
+*/
