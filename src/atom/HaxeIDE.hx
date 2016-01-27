@@ -1,24 +1,30 @@
-package atom.haxe.ide;
+package atom;
 
 import js.Browser.console;
 import js.node.Fs;
+import haxe.Timer;
+import haxe.compiler.ErrorMessage;
+import atom.Disposable;
+import atom.TextEditor;
 import atom.CompositeDisposable;
+import atom.haxe.ide.Build;
+import atom.haxe.ide.Server;
 import atom.haxe.ide.service.HaxeBuildService;
 import atom.haxe.ide.service.HaxeServerService;
 import atom.haxe.ide.view.BuildLogView;
 import atom.haxe.ide.view.BuildStatsView;
 import atom.haxe.ide.view.StatusBarView;
 import atom.haxe.ide.view.ServerLogView;
-import haxe.Timer;
-import haxe.compiler.ErrorMessage;
 
 using StringTools;
 using haxe.io.Path;
 
 @:keep
-class AtomPackage {
+@:expose
+@:native('haxe')
+class HaxeIDE {
 
-    static inline function __init__() untyped module.exports = atom.haxe.ide.AtomPackage;
+    static inline function __init__() untyped module.exports = atom.HaxeIDE;
 
     static var config = {
         haxe_path: {
@@ -63,14 +69,13 @@ class AtomPackage {
     };
 
     public static var hxmlFile(default,null) : String;
-
-    static var server : atom.haxe.ide.Server;
-    static var subscriptions : CompositeDisposable;
+    public static var server(default,null) : atom.haxe.ide.Server;
 
     static var log : BuildLogView;
     static var statusbar : StatusBarView;
     static var serverLog : ServerLogView;
 
+    static var subscriptions : CompositeDisposable;
     static var configChangeListener : Disposable;
 
     static function activate( savedState ) {
