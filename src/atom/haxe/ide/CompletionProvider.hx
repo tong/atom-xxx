@@ -119,7 +119,11 @@ class CompletionProvider {
                 //Completion.fetch(  hxmlFile, saveInfo.file, posInfo.index, mode, [],
                 Completion.fetch( AtomPackage.hxmlFile.directory(), AtomPackage.hxmlFile.withoutDirectory(), saveInfo.file, posInfo.index, mode, [],
                     function(xml){
-                        resolve( parseSuggestions( xml ) );
+                        if( xml != null ) {
+                            resolve( parseSuggestions( xml ) );
+                        } else {
+                            trace(xml);
+                        }
                     },
                     function(e){
                         trace(e);
@@ -300,7 +304,6 @@ class CompletionProvider {
         };
     }
     */
-
 
     function parseSuggestions( xml : Xml ) : Array<Suggestion> {
         var suggestions = new Array<Suggestion>();

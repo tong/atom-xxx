@@ -363,8 +363,8 @@ class AtomPackage {
 
     static function provideAutoCompletion() {
         //if( hxml != null )
-        return new CompletionProvider();
-        //return null;
+        //return new CompletionProvider();
+        return null;
     }
 
     ////////////////////////////////////////////////////////////////////////////

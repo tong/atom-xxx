@@ -1,2 +1,2 @@
 
-# Atom Haxe IDE
+# Haxe Development Environment
