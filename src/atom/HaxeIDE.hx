@@ -3,6 +3,7 @@ package atom;
 import js.Browser.console;
 import js.node.Fs;
 import haxe.Timer;
+import haxe.Hxml;
 import haxe.compiler.ErrorMessage;
 import atom.Disposable;
 import atom.TextEditor;
@@ -15,6 +16,7 @@ import atom.haxe.ide.view.BuildLogView;
 import atom.haxe.ide.view.BuildStatsView;
 import atom.haxe.ide.view.StatusBarView;
 import atom.haxe.ide.view.ServerLogView;
+import Atom.notifications;
 
 using StringTools;
 using haxe.io.Path;
@@ -68,46 +70,49 @@ class HaxeIDE {
         */
     };
 
-    public static var hxmlFile(default,null) : String;
+    public static var state(default,null) : atom.haxe.ide.State;
     public static var server(default,null) : atom.haxe.ide.Server;
+    //public static var hxmlFile(default,null) : String;
+
+    static var subscriptions : CompositeDisposable;
+    static var configChangeListener : Disposable;
 
     static var log : BuildLogView;
     static var statusbar : StatusBarView;
     static var serverLog : ServerLogView;
 
-    static var subscriptions : CompositeDisposable;
-    static var configChangeListener : Disposable;
-
     static function activate( savedState ) {
 
         trace( 'Atom-haxe-ide' );
+
+        state = new atom.haxe.ide.State( savedState );
+        if( state.hxml == null ) {
+            searchHxmlFiles(function(found){
+                if( found.length > 0 )
+                    state.setPath( found[0] );
+            });
+        }
 
         statusbar = new StatusBarView();
         log = new BuildLogView();
         serverLog = new ServerLogView();
 
+        /*
         if( savedState.hxmlFile != null ) {
             if( fileExists( savedState.hxmlFile ) ) {
-                hxmlFile = savedState.hxmlFile;
+                sta = savedState.hxmlFile;
                 //trace(hxmlFile);
                 /*
                 var dir = new atom.Directory( hxmlFile.directory() );
                 dir.onDidChange(function(){
                     trace("CHANGED");
                 });
-                */
+                * /
                 //trace(new atom.Directory('/home/tong/dev/tool/atom-haxe-ide/'));
-                //js.node.Fs.watchFile('/home/tong/dev/tool/atom-haxe-ide/build.hxml',{persistent:true},handleFilechange);
                 statusbar.setBuildPath( hxmlFile );
             }
         }
-        if( hxmlFile == null ) {
-            searchHxmlFiles(function(found){
-                if( found.length > 0 ) {
-                    hxmlFile = found[0];
-                }
-            });
-        }
+        */
 
         server = new atom.haxe.ide.Server();
         server.onStart = function(){
@@ -119,7 +124,7 @@ class HaxeIDE {
         }
         server.onError = function(msg){
             console.warn( msg );
-            //Atom.notifications.addError( msg );
+            //notifications.addError( msg );
         }
         server.onMessage = function(msg){
             //trace(msg);
@@ -149,18 +154,19 @@ class HaxeIDE {
     }
 
     static function deactivate() {
+
         subscriptions.dispose();
         configChangeListener.dispose();
+
         server.stop();
+
         log.destroy();
         statusbar.destroy();
         serverLog.destroy();
     }
 
     static function serialize() {
-        return {
-            hxmlFile: hxmlFile
-        };
+        return state.serialize();
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -183,31 +189,28 @@ class HaxeIDE {
 
         log.clear();
 
-        var selectedFile = getTreeViewFile();
-        if( selectedFile != null && selectedFile.extension() == 'hxml' ) {
-            hxmlFile = selectedFile;
-        } else {
-            if( hxmlFile == null ) {
-                Atom.notifications.addWarning( 'No hxml file selected' );
-                return;
-            }
+        var treeViewFile = getTreeViewFile();
+        if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
+            state.setPath( treeViewFile );
+        } else if( state.hxml == null ) {
+            notifications.addWarning( 'No hxml file selected' );
+            return;
         }
 
-        Fs.readFile( hxmlFile, {encoding:'utf8'}, function(e,r){
+        Fs.readFile( state.hxml, {encoding:'utf8'}, function(e,r){
 
             if( e != null ) {
-                Atom.notifications.addError( 'Failed to read hxml file : $hxmlFile' );
+                notifications.addError( 'Failed to read hxml file: '+state.hxml );
                 return;
             }
 
-            statusbar.setBuildPath( hxmlFile );
-            statusbar.setBuildStatus( active );
+            statusbar.set( state.hxml, active );
 
-            var dirPath = hxmlFile.directory();
+            //var dirPath = state.dir;
             //var filePath = hxmlFile.withoutDirectory();
 
-            var tokens = haxe.Hxml.parseTokens( r );
-            var args = [ '--cwd', dirPath ];
+            var tokens = Hxml.parseTokens( r );
+            var args = [ '--cwd', state.dir ];
             if( server.running ) {
                 //TODO why not write directly to stdin of server process ?
                 //server.stdin.write();
@@ -221,12 +224,8 @@ class HaxeIDE {
             var build = new Build( Atom.config.get( 'haxe-ide.haxe_path' ) );
 
             build.onMessage = function(msg){
-                var lines = msg.split( '\n' );
-                for( line in lines ) {
-                    if( line.length == 0 )
-                        continue;
+                for( line in msg.split( '\n' ) )
                     log.message( line );
-                }
                 log.show();
             }
 
@@ -235,10 +234,10 @@ class HaxeIDE {
                 statusbar.setBuildStatus( error );
 
                 if( msg != null ) {
+
                     var haxeErrors = new Array<ErrorMessage>();
                     for( line in msg.split( '\n' ) ) {
-                        line = line.trim();
-                        if( line.length == 0 )
+                        if( (line = line.trim()).length == 0 )
                             continue;
                         var err = ErrorMessage.parse( line );
                         if( err != null ) {
@@ -247,22 +246,21 @@ class HaxeIDE {
                             log.message( line, 'error' );
                         }
                     }
-
                     if( haxeErrors.length > 0 ) {
 
-                        for( err in haxeErrors )
-                            log.error( err );
+                        for( e in haxeErrors )
+                            log.error( e );
 
                         var err = haxeErrors[0];
 
                         if( err.path != '--macro' ) {
 
-                            var filePath = err.path.startsWith('/') ? err.path : dirPath+'/'+err.path;
+                            var filePath = err.path.startsWith('/') ? err.path : state.dir+'/'+err.path;
                             var line = err.line - 1;
                             var column =
-                            if( err.lines != null ) err.lines.start;
-                            else if( err.characters != null ) err.characters.start;
-                            else err.character;
+                                if( err.lines != null ) err.lines.start;
+                                else if( err.characters != null ) err.characters.start;
+                                else err.character;
 
                             //TODO check if error at std and avoid opening if configured
 
@@ -273,10 +271,10 @@ class HaxeIDE {
                                 searchAllPanes : true
                             }).then( function(editor:TextEditor){
 
-                                //editor.selectToEndOfWord();
-                                editor.selectWordsContainingCursors();
-                                //editor.setSelectedScreenRange( [line,column] );
                                 editor.scrollToCursorPosition();
+                                //editor.selectWordsContainingCursors();
+                                //editor.selectToEndOfWord();
+                                //editor.setSelectedScreenRange( [line,column] );
 
                                 //TODO texteditor error decoration
 
@@ -312,7 +310,7 @@ class HaxeIDE {
     ////////////////////////////////////////////////////////////////////////////
 
     static function consumeStatusBar( bar ) {
-        bar.addLeftTile( { item: statusbar.dom, priority:-10 } );
+        bar.addLeftTile( { item: statusbar.element, priority:-10 } );
     }
 
     ////////////////////////////////////////////////////////////////////////////
