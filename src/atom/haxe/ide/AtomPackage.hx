@@ -249,50 +249,47 @@ class AtomPackage {
                             log.error( err );
 
                         var err = haxeErrors[0];
-                        var filePath = err.path.startsWith('/') ? err.path : dirPath+'/'+err.path;
-                        var line = err.line - 1;
-                        var column =
+
+                        if( err.path != '--macro' ) {
+
+                            var filePath = err.path.startsWith('/') ? err.path : dirPath+'/'+err.path;
+                            var line = err.line - 1;
+                            var column =
                             if( err.lines != null ) err.lines.start;
                             else if( err.characters != null ) err.characters.start;
                             else err.character;
 
-                        //TODO check if error at std and avoid opening if configured
+                            //TODO check if error at std and avoid opening if configured
 
-                        Atom.workspace.open( filePath, {
-                            initialLine: line,
-                            initialColumn: column,
-                            activatePane: true,
-                            searchAllPanes : true
-                        }).then( function(editor:TextEditor){
+                            Atom.workspace.open( filePath, {
+                                initialLine: line,
+                                initialColumn: column,
+                                activatePane: true,
+                                searchAllPanes : true
+                            }).then( function(editor:TextEditor){
 
-                            //editor.selectToEndOfWord();
-                            editor.selectWordsContainingCursors();
-                            //editor.setSelectedScreenRange( [line,column] );
-                            editor.scrollToCursorPosition();
+                                //editor.selectToEndOfWord();
+                                editor.selectWordsContainingCursors();
+                                //editor.setSelectedScreenRange( [line,column] );
+                                editor.scrollToCursorPosition();
 
-                            //TODO texteditor error decoration
+                                //TODO texteditor error decoration
 
-                            //Atom.views.getView(Atom.workspace).focus();
+                                //Atom.views.getView(Atom.workspace).focus();
 
-                            //var range = editor.getSelectedBufferRange();
-                            //var range = new atom.Range( [3,0],[4,5] );
-                            //var range = new atom.Range( [0,0], [5,5] );
-                            //trace(editor);
-                            //var marker = editor.markBufferRange( range );
+                                //var range = editor.getSelectedBufferRange();
+                                //var range = new atom.Range( [3,0],[4,5] );
+                                //var range = new atom.Range( [0,0], [5,5] );
+                                //trace(editor);
+                                //var marker = editor.markBufferRange( range );
 
-                            //var params : Dynamic = {  type:'highlight' };
-                            //Reflect.setField( params, 'class', 'haxe-error-decoration' );
-                            //var decoration = editor.decorateMarker( marker, params );
-                            //var decoration = editor.decorateMarker( marker, untyped __javascript__("{type: 'line', class: 'haxe-error-line-class'}") );
-
-                            /*
-                            var marker = editor.markBufferRange( range, { invalidate:'overlap' } );
-                            var params : Dynamic = {  type:'line' };
-                            Reflect.setField( params, 'class', 'haxe-error-decoration' );
-                            // Why does the class fucking not apply ?????
-                            var decoration = editor.decorateMarker( marker, params );
-                            */
-                        });
+                                //var marker = editor.markBufferRange( range, { invalidate:'overlap' } );
+                                //var params : Dynamic = {  type:'line' };
+                                //Reflect.setField( params, 'class', 'haxe-error-decoration' );
+                                // Why does the class fucking not apply ?????
+                                //var decoration = editor.decorateMarker( marker, params );
+                            });
+                        }
                     }
 
                     log.show();
