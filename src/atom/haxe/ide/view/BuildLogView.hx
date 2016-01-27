@@ -40,9 +40,11 @@ class BuildLogView {
     }
 
     public function message( msg : String, ?status : String ) {
-        numMessages++;
-        var view = new LogMessageView( msg, messages.children.length, status, numMessages );
-        messages.appendChild( view.dom );
+        if( msg != null && msg.length > 0 ) {
+            numMessages++;
+            var view = new LogMessageView( msg, messages.children.length, status, numMessages );
+            messages.appendChild( view.dom );
+        }
         return this;
     }
 

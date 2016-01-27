@@ -10,22 +10,22 @@ using StringTools;
 class ServerLogView {
 
     var panel : atom.Panel;
-    var dom : DivElement;
+    var element : DivElement;
     var messages : DivElement;
 
     public function new() {
 
-        dom = document.createDivElement();
-        dom.classList.add( 'server-log', 'resizer' );
+        element = document.createDivElement();
+        element.classList.add( 'server-log', 'resizer' );
 
         messages = document.createDivElement();
         messages.classList.add( 'messages', 'scroller' );
-        dom.appendChild( messages );
+        element.appendChild( messages );
 
-        panel = Atom.workspace.addRightPanel( { item:dom, visible:false } );
+        panel = Atom.workspace.addRightPanel( { item: element, visible: false } );
 
-        dom.addEventListener( 'click', handleClick, false  );
-        dom.addEventListener( 'contextmenu', handleContextMenu, false  );
+        element.addEventListener( 'click', handleClick, false  );
+        element.addEventListener( 'contextmenu', handleContextMenu, false  );
     }
 
     public function add( text : String ) {
@@ -69,8 +69,8 @@ class ServerLogView {
     }
 
     public function destroy() {
-        dom.removeEventListener( 'click', handleClick );
-        dom.removeEventListener( 'contextmenu', handleContextMenu );
+        element.removeEventListener( 'click', handleClick );
+        element.removeEventListener( 'contextmenu', handleContextMenu );
     }
 
     function handleClick(e) {

@@ -9,33 +9,34 @@ import om.Time.now;
 
 class StatusBarView {
 
-    public var dom(default,null) : DivElement;
+    public var element(default,null) : DivElement;
 
     var icon : SpanElement;
     var text : AnchorElement;
     var time : SpanElement;
 
-    var currentStatus : BuildStatus;
     var path : String;
+    var currentStatus : BuildStatus;
+
     var buildStartTime : Float;
 
     public function new() {
 
-        dom = document.createDivElement();
-        dom.setAttribute( 'is', 'status-bar-haxe' );
-        dom.classList.add( 'haxe-status', 'inline-block' );
+        element = document.createDivElement();
+        element.setAttribute( 'is', 'status-bar-haxe' );
+        element.classList.add( 'haxe-status', 'inline-block' );
 
         icon = document.createSpanElement();
         icon.classList.add( 'haxeicon' );
-        dom.appendChild( icon );
+        element.appendChild( icon );
 
         text = document.createAnchorElement();
         text.classList.add( 'hxml' );
-        dom.appendChild( text );
+        element.appendChild( text );
 
         time = document.createSpanElement();
         time.classList.add( 'time' );
-        dom.appendChild( time );
+        element.appendChild( time );
 
         text.addEventListener( 'click', handleClickText, false );
     }
@@ -48,6 +49,19 @@ class StatusBarView {
             icon.title = str;
         } else {
             icon.title = 'Server not running';
+        }
+    }
+
+    public function setBuildPath( path : String ) {
+        if( path != null ) {
+            this.path = path;
+            var pathParts = Atom.project.relativizePath( path );
+            if( pathParts[0] != null ) {
+                var projectPathParts = pathParts[0].split( '/' );
+                text.textContent = projectPathParts[projectPathParts.length-1]+'/'+pathParts[1];
+            }
+        } else {
+            text.textContent = "";
         }
     }
 
@@ -64,25 +78,17 @@ class StatusBarView {
         case active:
             buildStartTime = now();
         case success:
-            var buildDuration = (now() - buildStartTime) / 1000;
-            var buildDurationString = Std.string( buildDuration );
-            buildDurationString = buildDurationString.substr( 0, buildDurationString.indexOf( '.' )+2 );
-            time.textContent = '($buildDurationString)';
+            var time = (now() - buildStartTime) / 1000;
+            var timeStr = Std.string( time );
+            timeStr = timeStr.substr( 0, timeStr.indexOf( '.' )+2 );
+            this.time.textContent = '($timeStr)';
         default:
         }
     }
 
-    public function setBuildPath( path : String ) {
-        if( path != null ) {
-            this.path = path;
-            var pathParts = Atom.project.relativizePath( path );
-            if( pathParts[0] != null ) {
-                var projectPathParts = pathParts[0].split( '/' );
-                text.textContent = projectPathParts[projectPathParts.length-1]+'/'+pathParts[1];
-            }
-        } else {
-            text.textContent = "";
-        }
+    public inline function set( path : String, status : BuildStatus ) {
+        setBuildPath( path );
+        setBuildStatus( status );
     }
 
     public function destroy() {
