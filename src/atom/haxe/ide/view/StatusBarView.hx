@@ -13,11 +13,11 @@ class StatusBarView {
 
     var icon : SpanElement;
     var text : AnchorElement;
-    var time : SpanElement;
+    var meta : SpanElement;
+    var tooltip : Disposable;
 
     var path : String;
     var currentStatus : BuildStatus;
-
     var buildStartTime : Float;
 
     public function new() {
@@ -34,9 +34,9 @@ class StatusBarView {
         text.classList.add( 'hxml' );
         element.appendChild( text );
 
-        time = document.createSpanElement();
-        time.classList.add( 'time' );
-        element.appendChild( time );
+        meta = document.createSpanElement();
+        meta.classList.add( 'meta' );
+        element.appendChild( meta );
 
         text.addEventListener( 'click', handleClickText, false );
     }
@@ -55,10 +55,12 @@ class StatusBarView {
     public function setBuildPath( path : String ) {
         if( path != null ) {
             this.path = path;
+            setTooltip( path );
             var pathParts = Atom.project.relativizePath( path );
             if( pathParts[0] != null ) {
                 var projectPathParts = pathParts[0].split( '/' );
-                text.textContent = projectPathParts[projectPathParts.length-1]+'/'+pathParts[1];
+                var str = projectPathParts[projectPathParts.length-1]+'/'+pathParts[1];
+                text.textContent = str;
             }
         } else {
             text.textContent = "";
@@ -78,12 +80,16 @@ class StatusBarView {
         case active:
             buildStartTime = now();
         case success:
-            var time = (now() - buildStartTime) / 1000;
+            var time = Std.int( now() - buildStartTime );
             var timeStr = Std.string( time );
             timeStr = timeStr.substr( 0, timeStr.indexOf( '.' )+2 );
-            this.time.textContent = '($timeStr)';
+            meta.textContent = timeStr+'ms';
         default:
         }
+    }
+
+    public function setMetaInfo( text : String ) {
+        meta.textContent = text;
     }
 
     public inline function set( path : String, status : BuildStatus ) {
@@ -92,7 +98,13 @@ class StatusBarView {
     }
 
     public function destroy() {
+        if( tooltip != null ) tooltip.dispose();
         text.removeEventListener( 'click', handleClickText );
+    }
+
+    function setTooltip( title : String ) {
+        if( tooltip != null ) tooltip.dispose();
+        tooltip = Atom.tooltips.add( element, { title: title } );
     }
 
     function handleClickText(e) {
