@@ -15,14 +15,14 @@
 'context-menu':
     'atom-text-editor[data-grammar$=hxml]': [
         { type: 'separator' },
-        { 'label': 'Haxe', 'command': 'haxe:build' },
+        { 'label': 'Build', 'command': 'haxe:build' },
         { type: 'separator' }
     ]
     'atom-pane[data-active-item-name$=\\.hxml]': [
         { type: 'separator' },
-        { 'label': 'Haxe', 'command': 'haxe:build' },
+        { 'label': 'Build', 'command': 'haxe:build' },
     ]
     '[data-name$=\\.hxml]': [
-        { label: 'Haxe', command: 'haxe:build' },
+        { label: 'Build', command: 'haxe:build' },
         { type: 'separator' }
     ]
