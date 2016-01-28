@@ -41,11 +41,10 @@ class StatusBarView {
         text.addEventListener( 'click', handleClickText, false );
     }
 
-    //public function setServerStatus( status : HaxeServerStatus ) {
     public function setServerStatus( exe : String, host : String, port : Int, running : Bool ) {
         if( running ) {
             var str = '$host:$port';
-            if( exe != 'haxe' ) str = exe + ' '+str;
+            if( exe != 'haxe' ) str = '$exe $str';
             icon.title = str;
         } else {
             icon.title = 'Server not running';
@@ -80,15 +79,14 @@ class StatusBarView {
         case active:
             buildStartTime = now();
         case success:
-            var time = Std.int( now() - buildStartTime );
-            var timeStr = Std.string( time );
-            timeStr = timeStr.substr( 0, timeStr.indexOf( '.' )+2 );
-            meta.textContent = timeStr+'ms';
+            var elapsedStr = Std.string( Std.int( now() - buildStartTime ) );
+            elapsedStr = elapsedStr.substr( 0, elapsedStr.indexOf( '.' )+2 );
+            meta.textContent = elapsedStr+'ms';
         default:
         }
     }
 
-    public function setMetaInfo( text : String ) {
+    public inline function setMetaInfo( text : String ) {
         meta.textContent = text;
     }
 

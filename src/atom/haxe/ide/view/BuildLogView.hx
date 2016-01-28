@@ -1,6 +1,7 @@
 package atom.haxe.ide.view;
 
 import js.Browser.document;
+//import js.Browser.window;
 import js.html.Element;
 import js.html.AnchorElement;
 import js.html.DivElement;
@@ -9,7 +10,7 @@ import haxe.compiler.ErrorMessage;
 
 class BuildLogView {
 
-    public var dom(default,null) : DivElement;
+    public var element(default,null) : DivElement;
 
     var panel : atom.Panel;
     var messages : DivElement;
@@ -17,25 +18,26 @@ class BuildLogView {
 
     public function new() {
 
-        dom = document.createDivElement();
-        dom.classList.add( 'build-log' );
+        element = document.createDivElement();
+        element.classList.add( 'build-log' );
 
         messages = document.createDivElement();
         messages.classList.add( 'messages' );
-        dom.appendChild( messages );
+        element.appendChild( messages );
 
-        panel = Atom.workspace.addBottomPanel( { item:dom, visible:false } );
+        panel = Atom.workspace.addBottomPanel( { item: element, visible: false } );
 
-        dom.addEventListener( 'contextmenu', handleRightClick, false );
+        element.addEventListener( 'contextmenu', handleRightClick, false );
+        window.addEventListener( 'keydown', handleKeyDown, false );
 
         numMessages = 0;
     }
 
-    public function show() {
+    public inline function show() {
         panel.show();
     }
 
-    public function hide() {
+    public inline function hide() {
         panel.hide();
     }
 
@@ -43,7 +45,7 @@ class BuildLogView {
         if( msg != null && msg.length > 0 ) {
             numMessages++;
             var view = new LogMessageView( msg, messages.children.length, status, numMessages );
-            messages.appendChild( view.dom );
+            messages.appendChild( view.element );
         }
         return this;
     }
@@ -51,7 +53,7 @@ class BuildLogView {
     public function error( err : ErrorMessage ) {
         numMessages++;
         var view = new ErrorMessageView( err, messages.children.length, numMessages );
-        messages.appendChild( view.dom );
+        messages.appendChild( view.element );
         return this;
     }
 
@@ -62,7 +64,8 @@ class BuildLogView {
     }
 
     public function destroy() {
-        dom.removeEventListener( 'contextmenu', handleRightClick );
+        element.removeEventListener( 'contextmenu', handleRightClick );
+        panel.destroy();
     }
 
     function handleRightClick(e) {
@@ -71,24 +74,28 @@ class BuildLogView {
             clear();
         }
     }
+
+    function handleKeyDown(e) {
+        trace(e);
+    }
 }
 
 private class MessageView {
 
-    public var dom(default,null) : DivElement;
+    public var element(default,null) : DivElement;
 
     function new( index : Int, num : Int ) {
 
-        dom = document.createDivElement();
-        dom.setAttribute( 'tabindex', '$index' );
-        dom.classList.add( 'message' );
+        element = document.createDivElement();
+        element.classList.add( 'message' );
+        //element.setAttribute( 'tabindex', '$index' );
 
         var messageNum = document.createSpanElement();
         messageNum.classList.add( 'num' );
         messageNum.textContent = Std.string( num );
-        dom.appendChild( messageNum );
+        element.appendChild( messageNum );
 
-        dom.addEventListener( 'click', handleClick, false );
+        element.addEventListener( 'click', handleClick, false );
     }
 
     function handleClick(e) {
@@ -107,13 +114,13 @@ private class LogMessageView extends MessageView {
         super( index, num );
         this.text = text;
 
-        if( status != null ) dom.classList.add( status );
+        if( status != null ) element.classList.add( status );
 
         var content = document.createSpanElement();
         content.classList.add( 'content' );
         //content.textContent = StringTools.htmlUnescape( text );
         content.textContent = text;
-        dom.appendChild( content );
+        element.appendChild( content );
     }
 
     override function copyToClipboard() {
@@ -130,11 +137,11 @@ private class ErrorMessageView extends MessageView {
         super( index, num );
         this.error = error;
 
-        dom.classList.add( 'error' );
+        element.classList.add( 'error' );
 
         var icon = document.createSpanElement();
         icon.classList.add( 'icon', 'icon-bug' );
-        dom.appendChild( icon );
+        element.appendChild( icon );
 
         link( error.path );
         span( ':' );
@@ -153,7 +160,7 @@ private class ErrorMessageView extends MessageView {
             pos.textContent = error.lines.start+'-'+error.lines.end;
         }
         pos.onclick = function(_) open( error.line-1, error.characters.start-1 );
-        dom.appendChild( pos );
+        element.appendChild( pos );
 
         span( ': ' );
 
@@ -187,7 +194,7 @@ private class ErrorMessageView extends MessageView {
         var e = document.createAnchorElement();
         e.classList.add( 'link' );
         e.textContent = text;
-        dom.appendChild( e );
+        element.appendChild( e );
         e.onclick = function(_) open( line );
         return e;
     }
@@ -196,6 +203,6 @@ private class ErrorMessageView extends MessageView {
         var e = document.createSpanElement();
         if( classes != null ) for( c in classes ) e.classList.add(c);
         e.textContent = text;
-        dom.appendChild( e );
+        element.appendChild( e );
     }
 }
