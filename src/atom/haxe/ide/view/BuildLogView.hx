@@ -1,7 +1,6 @@
 package atom.haxe.ide.view;
 
 import js.Browser.document;
-//import js.Browser.window;
 import js.html.Element;
 import js.html.AnchorElement;
 import js.html.DivElement;
@@ -28,7 +27,6 @@ class BuildLogView {
         panel = Atom.workspace.addBottomPanel( { item: element, visible: false } );
 
         element.addEventListener( 'contextmenu', handleRightClick, false );
-        window.addEventListener( 'keydown', handleKeyDown, false );
 
         numMessages = 0;
     }
@@ -118,7 +116,6 @@ private class LogMessageView extends MessageView {
 
         var content = document.createSpanElement();
         content.classList.add( 'content' );
-        //content.textContent = StringTools.htmlUnescape( text );
         content.textContent = text;
         element.appendChild( content );
     }
