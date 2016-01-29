@@ -32,7 +32,7 @@ class HaxeIDE {
 
         haxe_path: {
             "title": "Haxe path",
-            "description": "Path to haxe executable",
+            "description": "Path to the haxe executable",
             "type": "string",
             "default": "haxe"
         },
@@ -120,24 +120,6 @@ class HaxeIDE {
         statusbar = new StatusBarView();
         log = new BuildLogView();
         serverlog = new ServerLogView();
-        serverlog.show();
-
-        /*
-        if( savedState.hxmlFile != null ) {
-            if( fileExists( savedState.hxmlFile ) ) {
-                sta = savedState.hxmlFile;
-                //trace(hxmlFile);
-                /*
-                var dir = new atom.Directory( hxmlFile.directory() );
-                dir.onDidChange(function(){
-                    trace("CHANGED");
-                });
-                * /
-                //trace(new atom.Directory('/home/tong/dev/tool/atom-haxe-ide/'));
-                statusbar.setBuildPath( hxmlFile );
-            }
-        }
-        */
 
         server = new atom.haxe.ide.Server();
         server.onStart = function(){
@@ -149,10 +131,10 @@ class HaxeIDE {
         }
         server.onError = function(msg){
             console.warn( msg );
-            //notifications.addError( msg );
         }
         server.onMessage = function(msg){
             serverlog.add( msg );
+            //statusbar.setMetaInfo( msg );
         }
 
         subscriptions = new CompositeDisposable();
@@ -232,7 +214,6 @@ class HaxeIDE {
             //var dirPath = state.dir;
             //var filePath = hxmlFile.withoutDirectory();
 
-            var tokens = Hxml.parseTokens( r );
             var args = [ '--cwd', state.dir ];
             if( server.running ) {
                 //TODO why not write directly to stdin of server process ?
@@ -241,8 +222,20 @@ class HaxeIDE {
                 args.push( Std.string( server.port ) );
             }
             //args.push('--times'); //TODO
+
+            // HACK
+            var tokens = Hxml.parseTokens( r );
+            for( i in 0...tokens.length ) {
+                var token = tokens[i];
+                if( i < tokens.length-1 && !token.startsWith('-') ) {
+                    var next =  tokens[i+1];
+                    if( !next.startsWith( '-' ) ) {
+                        tokens[i] = '$token $next';
+                        tokens.splice( i+1, 1 );
+                    }
+                }
+            }
             args = args.concat( tokens );
-            //trace(args);
 
             var build = new Build( Atom.config.get( 'haxe-ide.haxe_path' ) );
 
@@ -279,13 +272,17 @@ class HaxeIDE {
                         if( err.path != '--macro' ) {
 
                             var filePath = err.path.startsWith('/') ? err.path : state.dir+'/'+err.path;
+
+                            //TODO check if error at std and avoid opening if configured
+                            //TODO .. better check against a custom blacklist
+                            //trace(filePath);
+
                             var line = err.line - 1;
                             var column =
                                 if( err.lines != null ) err.lines.start;
                                 else if( err.characters != null ) err.characters.start;
                                 else err.character;
 
-                            //TODO check if error at std and avoid opening if configured
 
                             Atom.workspace.open( filePath, {
                                 initialLine: line,
