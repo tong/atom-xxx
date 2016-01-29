@@ -35,7 +35,7 @@
     "repository": "https://github.com/tong/atom-haxe-ide",
     "license": "GPL",
     "engines": {
-        "atom": ">=1.1.0 <2.0.0"
+        "atom": ">=1.4.0 <2.0.0"
     },
     "dependencies": {
         "language-haxe": "^0.3.0"
