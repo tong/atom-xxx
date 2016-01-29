@@ -31,6 +31,9 @@ class ServerLogView {
 
     public function add( text : String ) {
 
+        if( !panel.isVisible() )
+            return;
+
         for( line in text.split( '\n' ) ) {
 
             if( (line = line.trim()).length == 0 )
