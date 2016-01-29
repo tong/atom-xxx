@@ -55,7 +55,7 @@ class ServerLogView {
                 link.onclick = function(e){
                     if( !e.ctrlKey ) workspace.open( line.substr(7) );
                 }
-                link.textContent = line.substr(7).htmlEscape();
+                link.textContent = line.substr(7);
                 e.appendChild( link );
 
             case 'processing':
@@ -70,22 +70,22 @@ class ServerLogView {
                 while( i < args.length ) {
                     var text = args[i];
                     var next = args[i+1];
-                    if( !next.startsWith( '-' ) ) {
+                    if( next != null && !next.startsWith( '-' ) ) {
                         text += ' $next';
                         i++;
                     }
                     var child = document.createDivElement();
-                    child.textContent = text.htmlEscape();
+                    child.textContent = text;
                     child.classList.add( 'param' );
                     e.appendChild( child );
                     i++;
                 }
             case 'time':
-                e.textContent = line.htmlEscape();
+                e.textContent = line;
                 scrollToBottom();
 
             default:
-                e.textContent = line.htmlEscape();
+                e.textContent = line;
             }
         }
     }
