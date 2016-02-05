@@ -240,8 +240,7 @@ class HaxeIDE {
             var build = new Build( Atom.config.get( 'haxe-ide.haxe_path' ) );
 
             build.onMessage = function(msg){
-                for( line in msg.split( '\n' ) )
-                    log.message( line );
+                log.message( msg );
                 log.show();
             }
 
