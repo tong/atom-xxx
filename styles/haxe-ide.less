@@ -13,8 +13,8 @@
 	font-weight: normal;
 	font-style: normal;
 	//font-size: 110%;
-	-webkit-font-smoothing: antialiased;
 	/*
+	-webkit-font-smoothing: antialiased;
 	//content: url(atom://haxe-ide/res/haxe2.svg);
 	//font-size: 11px;
 	*/
@@ -39,16 +39,14 @@
 	 -webkit-font-smoothing: antialiased;
 }
 */
-
 [data-name$='.hx']:before {
 	.haxe-icon;
 	font-family: HaxeIDEFont;
 	font-weight: normal;
 	font-style: normal;
-	//font-size: 110%;
-	-webkit-font-smoothing: antialiased;
 	font-size: 120%;
-
+	//font-size: 110%;
+	//-webkit-font-smoothing: antialiased;
 	/*
 	display: inline-block;
 	line-height: @component-line-height;
@@ -62,109 +60,101 @@
 
 /* ----- StatusBarView ----- */
 
-@-webkit-keyframes spin {
+@keyframes spin {
 	100% { transform: rotate(-360deg); }
 }
 
-.haxe-status .success {
-	color: @text-color-success;
-}
-.haxe-status .error {
-	color: @text-color-error;
-}
-
-.haxe-status .hxml {
-	cursor: pointer;
-}
-.haxe-status .hxml:hover {
-	text-decoration: underline;
-}
-
-.haxe-status .haxeicon {
-	display: inline-block;
-	width: 1em;
-	margin-right: 4px;
-	text-align: center;
-	font-family: HaxeIDEFont;
-	font-size: 112%;
-	//font-size: 10px;
-	line-height: 1em;
-	margin-left: .2em;
-	-webkit-font-smoothing: antialiased;
-	-webkit-transition: color 0.2s;
-	transition: color 0.2s;
-	//will-change: color, transform;
-}
-.haxe-status .haxeicon:before {
-	content: '\e805';
-}
-.haxe-status .haxeicon.active {
-    -webkit-animation: spin 0.5s linear infinite forwards;
-    animation: spin 0.5s linear infinite forwards;
-	color: @text-color-highlight;
-}
-/*
-.haxe-status .haxeicon .success {
-	color: @text-color;
-}
-*/
-
-.haxe-status .meta {
-	margin-left: 4px;
-	color: @text-color-subtle;
+.haxe-status {
+	.success {
+		color: @text-color-success;
+	}
+	.error {
+		color: @text-color-error;
+	}
+	.hxml {
+		cursor: pointer;
+	}
+	.hxml:hover {
+		text-decoration: underline;
+	}
+	.haxeicon {
+		display: inline-block;
+		width: 1em;
+		margin-right: 4px;
+		text-align: center;
+		font-family: HaxeIDEFont;
+		font-size: 112%;
+		line-height: 1em;
+		margin-left: .2em;
+		-webkit-font-smoothing: antialiased;
+		-webkit-transition: color 0.2s;
+		transition: color 0.2s;
+		//will-change: color, transform;
+	}
+	.haxeicon:before {
+		content: '\e805';
+	}
+	.haxeicon.active {
+	    -webkit-animation: spin 0.5s linear infinite forwards;
+	    animation: spin 0.5s linear infinite forwards;
+		color: @text-color-highlight;
+	}
+	.meta {
+		margin-left: 4px;
+		color: @text-color-subtle;
+	}
 }
 
 
 /* ----- BuildLogView ----- */
 
 .build-log {
+
 	border-left: 1px solid @pane-item-border-color;
 	overflow-y: auto;
-}
 
-.build-log .message {
-	padding: 2px 0px 2px 0px;
-}
+	.message:not(:last-child) {
+		border-bottom: 1px dotted @pane-item-border-color;
+	}
+	.message:last-child {
+		border-bottom: 1px solid @pane-item-border-color;
+	}
 
-.build-log .message:not(:last-child) {
-	border-bottom: 1px dotted @pane-item-border-color;
-}
-.build-log .message:last-child {
-	border-bottom: 1px solid @pane-item-border-color;
-}
+	.message.error,
+	.message.error a {
+		color: @text-color-error !important;
+	}
 
-.build-log .message.error,
-.build-log .message.error a {
-	color: @text-color-error !important;
+	.message {
+		padding: 2px 0px 2px 0px;
+		.content {
+			margin: 0;
+			padding: 2px 2px 2px 6px;
+			white-space: wrap;
+			font-size: 100%;
+			background: none;
+			line-height: 8px;
+		}
+		.num {
+			padding-left: 6px;
+			//-webkit-user-select: none;
+			cursor: default;
+			color: @text-color-subtle;
+			float: left;
+		}
+		.link:hover {
+			cursor: pointer;
+			text-decoration: underline;
+		}
+		.icon {
+		   margin-left: 9px;
+		   -webkit-user-select: none;
+	   	}
+		.icon::before {
+			margin-right: 0px !important;
+		}
+	}
 }
-
-.build-log .message .num {
-	padding-left: 6px;
-	-webkit-user-select: none;
-	cursor: default;
-	color: @text-color-subtle;
-}
-
-.build-log .message .content {
-	padding-left: 6px;
-}
-
-.build-log .message .link:hover {
-	cursor: pointer;
-	text-decoration: underline;
-}
-
-.build-log .message .icon {
-	margin-left: 9px;
-	-webkit-user-select: none;
-}
-.build-log .message .icon::before {
-	margin-right: 0px !important;
-}
-
-.build-log .message .content {
-}
-
 
 
 /* ----- ServerLogView ----- */
