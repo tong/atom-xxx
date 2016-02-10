@@ -1,11 +1,7 @@
 -js lib/haxe-ide.js
--dce full
 -lib hxatom
-#-lib closure
 -cp src
 -cp ../../lib/om.core/src
 -cp ../../lib/om.haxeutils/src
 -cp ../../lib/om.term/src
-#-D closure_overwrite
--debug
 atom.HaxeIDE
