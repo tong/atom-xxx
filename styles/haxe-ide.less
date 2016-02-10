@@ -110,8 +110,10 @@
 
 .build-log {
 
+	padding: 0;
 	border-left: 1px solid @pane-item-border-color;
 	overflow-y: auto;
+	font-size: 100%;
 
 	.message:not(:last-child) {
 		border-bottom: 1px dotted @pane-item-border-color;
@@ -122,19 +124,13 @@
 
 	.message.error,
 	.message.error a {
-		color: @text-color-error !important;
+		//background: @background-color-error;
+		color: @text-color-error;
 	}
 
 	.message {
-		padding: 2px 0px 2px 0px;
-		.content {
-			margin: 0;
-			padding: 2px 2px 2px 6px;
-			white-space: wrap;
-			font-size: 100%;
-			background: none;
-			line-height: 8px;
-		}
+		padding: 4px 0px 2px 0px;
+		border-radius: 0;
 		.num {
 			padding-left: 6px;
 			//-webkit-user-select: none;
@@ -142,6 +138,22 @@
 			color: @text-color-subtle;
 			float: left;
 		}
+		.content {
+			margin: 0;
+			padding: 2px 2px 2px 6px;
+			//white-space: wrap;
+			//font-size: 90%;
+			background: none;
+			//line-height: 90%;
+			span.debug { color: @text-color-highlight; }
+			span.info { color: @text-color-success; }
+			//span.info::before { content:  }
+			span.success { color: @text-color-success; }
+			span.error { color: @text-color-error; }
+			//span.error::before { content: '\e805'; }
+			span.warning { color: @text-color-warning; }
+		}
+
 		.link:hover {
 			cursor: pointer;
 			text-decoration: underline;

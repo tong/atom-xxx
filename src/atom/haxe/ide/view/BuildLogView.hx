@@ -7,6 +7,8 @@ import js.html.DivElement;
 import js.html.SpanElement;
 import haxe.compiler.ErrorMessage;
 
+using StringTools;
+
 class BuildLogView {
 
     public var element(default,null) : DivElement;
@@ -80,15 +82,17 @@ class BuildLogView {
 
 private class MessageView {
 
-    public var element(default,null) : DivElement;
+    public var element(default,null) : Element;
 
     function new( index : Int, num : Int ) {
 
+        //element = document.createElement( 'pre' );
         element = document.createDivElement();
         element.classList.add( 'message' );
         //element.setAttribute( 'tabindex', '$index' );
 
-        var messageNum = document.createSpanElement();
+        //var messageNum = document.createElement( 'pre' );
+        var messageNum = document.createSpanElement( );
         messageNum.classList.add( 'num' );
         messageNum.textContent = Std.string( num );
         element.appendChild( messageNum );
@@ -96,11 +100,48 @@ private class MessageView {
         element.addEventListener( 'click', handleClick, false );
     }
 
+    function copyToClipboard() {}
+
     function handleClick(e) {
         if( e.ctrlKey ) copyToClipboard();
     }
 
-    function copyToClipboard() {}
+    static function ansiToHTML( str : String ) : String {
+        //TODO
+        var regexp = untyped __js__('/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g');
+        var html = '';
+        for( line in str.split( '\n' ) ) {
+            if( line.length == 0 )
+                continue;
+            var ansiCodes : Array<String> = untyped line.match( regexp );
+            if( ansiCodes != null && ansiCodes.length > 0 ) {
+                var ansiColor = Std.parseInt( ansiCodes[0].substr( 2, ansiCodes[0].length - 2 ) );
+                var colorClass = switch ansiColor {
+                    //case 30: '#000000';
+                    case 31: 'error icon-bug';
+                    case 32: 'success icon-check';
+                    //case 33: '#ffff00';
+                    case 34: 'debug';
+                    case 35: 'warning icon-alert';
+                    case 36: 'info icon-info';
+                    //case 37: '#ffffff';
+                    default: 'test';
+                }
+                if( colorClass != null ) {
+                    line = line.replace( ansiCodes[0], '<span class="$colorClass">' );
+                    line = line.replace( ansiCodes[1], '</span>' );
+                } else {
+                    line = line.replace( ansiCodes[0], '' );
+                    line = line.replace( ansiCodes[1], '' );
+                    line = '<span>$line</span>';
+                }
+            } else {
+                line = '<span>$line</span>';
+            }
+            html += line+'<br>';
+        }
+        return html;
+    }
 }
 
 private class LogMessageView extends MessageView {
@@ -114,13 +155,18 @@ private class LogMessageView extends MessageView {
 
         if( status != null ) element.classList.add( status );
 
-        var content = document.createSpanElement();
+        //TODO
+        //var content = document.createElement( 'pre' );
+        var content = document.createDivElement();
         content.classList.add( 'content' );
-        content.textContent = text;
+
+        var html = MessageView.ansiToHTML( text );
+        content.innerHTML = html;
+
         element.appendChild( content );
     }
 
-    override function copyToClipboard() {
+    override inline function copyToClipboard() {
         Atom.clipboard.write( text );
     }
 }

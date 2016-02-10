@@ -5,6 +5,7 @@
 -cp src
 -cp ../../lib/om.core/src
 -cp ../../lib/om.haxeutils/src
+-cp ../../lib/om.term/src
 #-D closure_overwrite
 -debug
 atom.HaxeIDE
