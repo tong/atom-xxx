@@ -2,7 +2,6 @@ package atom.haxe.ide;
 
 import js.Node;
 import js.Node.process;
-import js.node.Fs;
 import js.node.ChildProcess.spawn;
 import js.node.child_process.ChildProcess;
 

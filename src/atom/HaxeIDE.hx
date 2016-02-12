@@ -16,6 +16,7 @@ import atom.haxe.ide.view.BuildLogView;
 import atom.haxe.ide.view.BuildStatsView;
 import atom.haxe.ide.view.StatusBarView;
 import atom.haxe.ide.view.ServerLogView;
+import atom.haxe.ide.view.OutlineView;
 import Atom.notifications;
 
 using StringTools;
@@ -57,6 +58,13 @@ class HaxeIDE {
             "default": 3
         },
 
+        buildlog_numbers: {
+            "title": "Message Numbers",
+            "description": "Show message numbers in build log",
+            "type": "boolean",
+            "default": true
+        },
+
         /*
         build_server_enabled: {
             "title": "Enable/Disable haxe build server",
@@ -72,8 +80,8 @@ class HaxeIDE {
             "default": 'source.haxe, source.hxml'
         },
 
-        buildlog_line_number: {
-            "title": "Show Line Numbers",
+        buildlog_ansi_colors: {
+            "title": "ANSI Colors",
             "description": "Show line numbers in build log",
             "type": "boolean",
             "default": true
@@ -104,6 +112,7 @@ class HaxeIDE {
     static var log : BuildLogView;
     static var statusbar : StatusBarView;
     static var serverlog : ServerLogView;
+    //static var outline : OutlineView;
 
     static function activate( savedState ) {
 
@@ -120,6 +129,8 @@ class HaxeIDE {
         statusbar = new StatusBarView();
         log = new BuildLogView();
         serverlog = new ServerLogView();
+        //outline = new OutlineView();
+        //outline.show();
 
         server = new atom.haxe.ide.Server();
         server.onStart = function(){
@@ -156,6 +167,26 @@ class HaxeIDE {
                 Atom.config.get( 'haxe-ide.server_host' )
             );
         }, Atom.config.get( 'haxe-ide.server_startdelay' ) * 1000 );
+
+        Atom.workspace.observeTextEditors(function(editor){
+            editor.onDidSave(function(e){
+                var path = editor.getPath();
+                if( path.extension() == 'hx' && editor.getText().trim().length == 0 ) {
+                    var projectPath = Atom.project.getPaths()[0];
+                    var path = e.path;
+                    var relPath = path.substr( projectPath.length + 1 );
+                    var parts = relPath.split('/');
+                    if( parts[0] == 'src' ) parts.shift(); //TODO
+                    var file = parts.pop().split('.')[0];
+                    var pack = parts.join('.');
+                    var tpl = 'package $pack;\n\nclass $file {\n\n\tpublic function new() {\n\t}\n}\n';
+                    editor.setText( tpl );
+                    editor.moveUp(2);
+                    editor.moveToEndOfLine();
+                    editor.save();
+                }
+            });
+        });
     }
 
     static function deactivate() {

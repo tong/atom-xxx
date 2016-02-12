@@ -1,7 +1,7 @@
 {
     "name": "haxe-ide",
     "main": "./lib/haxe-ide",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "description": "Haxe Development Environment",
     "keywords": ["haxe","ide","haxe-ide"],
     "consumedServices": {
