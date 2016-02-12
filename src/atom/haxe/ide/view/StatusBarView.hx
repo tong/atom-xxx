@@ -39,6 +39,7 @@ class StatusBarView {
         element.appendChild( meta );
 
         text.addEventListener( 'click', handleClickText, false );
+        text.addEventListener( 'contextmenu', handleRightClickText, false );
     }
 
     public function setServerStatus( exe : String, host : String, port : Int, running : Bool ) {
@@ -98,6 +99,7 @@ class StatusBarView {
     public function destroy() {
         if( tooltip != null ) tooltip.dispose();
         text.removeEventListener( 'click', handleClickText );
+        text.removeEventListener( 'contextmenu', handleRightClickText );
     }
 
     function setTooltip( title : String ) {
@@ -106,6 +108,10 @@ class StatusBarView {
     }
 
     function handleClickText(e) {
+        HaxeIDE.build();
+    }
+
+    function handleRightClickText(e) {
         Atom.workspace.open( path );
     }
 
