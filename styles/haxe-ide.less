@@ -1,5 +1,8 @@
 
-@import "ui-variables";
+//@import "ui-variables";
+//@font-family-mono: Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+
+@import "vars";
 
 @font-face {
 	font-family: HaxeIDEFont;
@@ -12,252 +15,19 @@
 	font-family: HaxeIDEFont;
 	font-weight: normal;
 	font-style: normal;
-	//font-size: 110%;
-	/*
-	-webkit-font-smoothing: antialiased;
-	//content: url(atom://haxe-ide/res/haxe2.svg);
-	//font-size: 11px;
-	*/
 	content: '\e805';
 }
 
-/*
-[data-name]:before {
-	margin-right: 5px;
-	 position: relative;
-	 top: 1px;
-	 font-family: 'Octicons Regular';
-	 font-weight: normal;
-	 font-style: normal;
-	 display: inline-block;
-	 line-height: @component-line-height;
-	 text-align: center;
-	 text-decoration: none;
-	 font-size: @component-icon-size;
-	 width: @component-icon-size;
-	 height: @component-icon-size;
-	 -webkit-font-smoothing: antialiased;
-}
-*/
 [data-name$='.hx']:before {
 	.haxe-icon;
 	font-family: HaxeIDEFont;
 	font-weight: normal;
 	font-style: normal;
 	font-size: 120%;
-	//font-size: 110%;
-	//-webkit-font-smoothing: antialiased;
-	/*
-	display: inline-block;
-	line-height: @component-line-height;
-	text-align: center;
-	text-decoration: none;
-	//width: @component-icon-size;
-	//height: @component-icon-size;
-	*/
 }
 
+/////////////////
 
-/* ----- StatusBarView ----- */
-
-@keyframes spin {
-	100% { transform: rotate(-360deg); }
-}
-
-.haxe-status {
-	.success {
-		color: @text-color-success;
-	}
-	.error {
-		color: @text-color-error;
-	}
-	.hxml {
-		cursor: pointer;
-	}
-	.hxml:hover {
-		text-decoration: underline;
-	}
-	.haxeicon {
-		display: inline-block;
-		width: 1em;
-		margin-right: 4px;
-		text-align: center;
-		font-family: HaxeIDEFont;
-		font-size: 112%;
-		line-height: 1em;
-		margin-left: .2em;
-		-webkit-font-smoothing: antialiased;
-		-webkit-transition: color 0.2s;
-		transition: color 0.2s;
-		//will-change: color, transform;
-	}
-	.haxeicon:before {
-		content: '\e805';
-	}
-	.haxeicon.active {
-	    -webkit-animation: spin 0.5s linear infinite forwards;
-	    animation: spin 0.5s linear infinite forwards;
-		color: @text-color-highlight;
-	}
-	.meta {
-		margin-left: 4px;
-		color: @text-color-subtle;
-	}
-}
-
-
-/* ----- BuildLogView ----- */
-
-.build-log {
-
-	padding: 0;
-	border-left: 1px solid @pane-item-border-color;
-	overflow-y: auto;
-	font-size: 100%;
-
-	.message:not(:last-child) {
-		border-bottom: 1px dotted @pane-item-border-color;
-	}
-	.message:last-child {
-		border-bottom: 1px solid @pane-item-border-color;
-	}
-
-	.message.error,
-	.message.error a {
-		//background: @background-color-error;
-		color: @text-color-error;
-	}
-
-	.message {
-		padding: 4px 0px 2px 0px;
-		border-radius: 0;
-		.num {
-			padding-left: 6px;
-			//-webkit-user-select: none;
-			cursor: default;
-			color: @text-color-subtle;
-			float: left;
-		}
-		.content {
-			margin: 0;
-			padding: 2px 2px 2px 6px;
-			//white-space: wrap;
-			//font-size: 90%;
-			background: none;
-			//line-height: 90%;
-			span.debug { color: @text-color-highlight; }
-			span.info { color: @text-color-success; }
-			//span.info::before { content:  }
-			span.success { color: @text-color-success; }
-			span.error { color: @text-color-error; }
-			//span.error::before { content: '\e805'; }
-			span.warning { color: @text-color-warning; }
-		}
-
-		.link:hover {
-			cursor: pointer;
-			text-decoration: underline;
-		}
-		.icon {
-		   margin-left: 9px;
-		   -webkit-user-select: none;
-	   	}
-		.icon::before {
-			margin-right: 0px !important;
-		}
-	}
-}
-
-
-/* ----- ServerLogView ----- */
-
-.server-log {
-
-    height: 100%;
-    min-height: 100%;
-	max-height: 100%;
-	min-width: 200px;
-	max-width: 600px;
-    overflow-y: auto;
-    border-left: 1px solid @pane-item-border-color;
-    padding-top: 3px;
-    padding-bottom: 6px;
-    font-family: 'Anonymous Pro', Inconsolata, Monaco, Consolas, 'Courier New', Courier;
-    line-height: 12px;
-    cursor: default;
-
-	.messages {
-
-		overflow:auto;
-    	white-space:pre-wrap;
-
-		.message {
-			padding: 1px 4px 0px 6px;
-			white-space: pre-wrap;
-			color: @text-color;
-		}
-
-		.message:not(:last-child) {
-			border-bottom: 1px dotted @pane-item-border-color;
-		}
-
-		.message.processing,
-		.message.reading,
-		.message.time,
-		.message.waiting,
-		.message.client {
-			color: @text-color-info;
-		}
-
-		.message.error {
-			color: @text-color-error;
-			font-weight: bold;
-		}
-
-		.message.reusing,
-		.message.parsed {
-			color: @text-color-subtle;
-		}
-
-		.message.parsed {}
-		.message.parsed .link {
-			cursor: pointer;
-			margin-left: 4px;
-		}
-		.message.parsed .link:hover {
-			color: @text-color-highlight;
-			text-decoration: underline;
-		}
-
-		.message.processing {}
-		.message.processing div.param {
-			margin-left: 16px;
-		}
-
-		.message.time {
-			border-bottom: 4px solid @pane-item-border-color;
-		}
-
-		/*
-		.message.cached {}
-		.message.stats {}
-		*/
-	}
-}
-
-/* ----- TextEditor Decoration ----- */
-
-//TODO
-
-/*
-.line.haxe-error-decoration {
-	background-color: #ff0000 !important;
-	color: #fff;
-	font-size:22px;
-}
-
-.haxe-error-line-class {
-	background-color: #ff0000 !important;
-	color: #fff000 !important;
-}
-*/
+@import "statusbar";
+@import "buildlog";
+@import "serverlog";

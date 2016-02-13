@@ -1,0 +1,47 @@
+
+@import "vars";
+
+@keyframes spin {
+	100% { transform: rotate(-360deg); }
+}
+
+.haxe-status {
+	.success {
+		color: @text-color-success;
+	}
+	.error {
+		color: @text-color-error;
+	}
+	.hxml {
+		cursor: pointer;
+	}
+	.hxml:hover {
+		text-decoration: underline;
+	}
+	.haxeicon {
+		display: inline-block;
+		width: 1em;
+		margin-right: 4px;
+		text-align: center;
+		font-family: HaxeIDEFont;
+		font-size: 112%;
+		line-height: 1em;
+		margin-left: .2em;
+		-webkit-font-smoothing: antialiased;
+		-webkit-transition: color 0.2s;
+		transition: color 0.2s;
+		//will-change: color, transform;
+	}
+	.haxeicon:before {
+		content: '\e805';
+	}
+	.haxeicon.active {
+	    -webkit-animation: spin 0.5s linear infinite forwards;
+	    animation: spin 0.5s linear infinite forwards;
+		color: @text-color-highlight;
+	}
+	.meta {
+		margin-left: 4px;
+		color: @text-color-subtle;
+	}
+}
