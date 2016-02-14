@@ -40,6 +40,7 @@ class StatusBarView {
         meta.classList.add( 'meta' );
         element.appendChild( meta );
 
+        icon.addEventListener( 'click', handleClickIcon, false );
         info.addEventListener( 'click', handleClickText, false );
         info.addEventListener( 'contextmenu', handleRightClickText, false );
 
@@ -103,6 +104,7 @@ class StatusBarView {
     }
 
     public function destroy() {
+        icon.removeEventListener( 'click', handleClickIcon );
         info.removeEventListener( 'click', handleClickText );
         info.removeEventListener( 'contextmenu', handleRightClickText );
         for( tip in tooltips ) tip.dispose();
@@ -125,6 +127,10 @@ class StatusBarView {
             tooltips.get( element ).dispose();
             tooltips.remove( element );
         }
+    }
+
+    function handleClickIcon(e) {
+        HaxeIDE.serverLog.toggle();
     }
 
     function handleClickText(e) {
