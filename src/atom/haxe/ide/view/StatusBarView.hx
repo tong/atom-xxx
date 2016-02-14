@@ -7,6 +7,8 @@ import js.html.DivElement;
 import js.html.SpanElement;
 import haxe.ds.ObjectMap;
 
+using haxe.io.Path;
+
 class StatusBarView {
 
     public var element(default,null) : DivElement;
@@ -82,7 +84,7 @@ class StatusBarView {
             if( parts[0] != null ) {
                 var projectParts = parts[0].split( '/' );
                 var str = projectParts[projectParts.length-1]+'/'+parts[1];
-                info.textContent = str;
+                info.textContent = str.withoutExtension();
             }
             addTooltip( info, buildFile );
         }
