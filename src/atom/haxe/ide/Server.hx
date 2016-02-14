@@ -66,10 +66,12 @@ class Server {
     }
 
     function handleError(e) {
+        trace(e.toString());
         onError( e.toString() );
     }
 
     function handleExit( code : Int ) {
+        trace(code);
         status = off;
         onStop( code );
     }

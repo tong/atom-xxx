@@ -70,7 +70,11 @@ class StatusBarView {
     }
 
     public function setBuildFile( buildFile : String ) {
-        if( buildFile != null ) {
+        if( buildFile == null ) {
+            info.textContent = "";
+            info.classList.remove( buildStatus );
+            removeTooltip( info );
+        } else {
             this.buildFile = buildFile;
             var parts = Atom.project.relativizePath( buildFile );
             if( parts[0] != null ) {
@@ -79,10 +83,6 @@ class StatusBarView {
                 info.textContent = str;
             }
             addTooltip( info, buildFile );
-        } else {
-            info.textContent = "";
-            info.classList.remove( buildStatus );
-            removeTooltip( info );
         }
     }
 

@@ -37,7 +37,7 @@
 	}
 	.haxeicon.off {
 		color: @input-background-color;
-		opacity: 0.8;
+		opacity: 0.2;
 	}
 	.haxeicon.idle {
 		color: @text-color;
@@ -58,6 +58,7 @@
 	.info {
 		color: @text-color;
 		cursor: pointer;
+		transition: color 0.2s; 
 	}
 	.info:hover {
 		text-decoration: underline;
@@ -65,7 +66,7 @@
 	.info.idle {
 		color: @text-color;
 	}
-	.info:active {
+	.info.active {
 		color: @haxe-color-orange-1;
 	}
 	.info.error {

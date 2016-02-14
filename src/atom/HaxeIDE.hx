@@ -2,6 +2,7 @@ package atom;
 
 import js.Browser.console;
 import js.node.Fs;
+import js.node.ChildProcess.spawn;
 import haxe.Timer;
 import haxe.Hxml;
 import haxe.compiler.ErrorMessage;
@@ -19,6 +20,7 @@ import atom.haxe.ide.view.ServerLogView;
 import atom.haxe.ide.view.OutlineView;
 import Atom.notifications;
 import om.Time;
+import thx.semver.Version;
 
 using StringTools;
 using haxe.io.Path;
@@ -132,16 +134,17 @@ class HaxeIDE {
         */
     };
 
+    //public static var haxeVersion(default,null) : Version;
     public static var state(default,null) : atom.haxe.ide.State;
     public static var server(default,null) : atom.haxe.ide.Server;
-
-    //static var subscriptions : CompositeDisposable;
-    static var configChangeListener : Disposable;
 
     static var statusBar : StatusBarView;
     static var buildLog : BuildLogView;
     static var serverLog : ServerLogView;
     //static var outline : OutlineView;
+
+    //static var subscriptions : CompositeDisposable;
+    static var configChangeListener : Disposable;
 
     static var commandServerStop : Disposable;
     static var commandServerStart : Disposable;
@@ -150,7 +153,7 @@ class HaxeIDE {
 
     static function activate( savedState : Dynamic ) {
 
-        trace( 'Atom-haxe-ide '+savedState );
+        trace( 'Atom-haxe-ide : '+savedState );
 
         state = new atom.haxe.ide.State( savedState.state );
 
@@ -158,7 +161,6 @@ class HaxeIDE {
         buildLog = new BuildLogView();
         serverLog = new ServerLogView();
         //outline = new OutlineView();
-        //outline.show();
 
         if( savedState.serverLogVisible ) {
             serverLog.show();
@@ -166,22 +168,25 @@ class HaxeIDE {
 
         server = new atom.haxe.ide.Server();
         server.onStart = function(){
-            console.info( 'Haxe server started '+server.status );
-            statusBar.setServerStatus( server.status, server.exe, server.host, server.port );
+
             if( commandServerStart != null ) commandServerStart.dispose();
             commandServerStop = Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(e) stopServer() );
-            commandBuild = Atom.commands.add( 'atom-workspace', 'haxe:build', function(_) build() );
+            commandServerLogToggle = Atom.commands.add( 'atom-workspace', 'haxe:server-log-toggle', function(_) serverLog.toggle() );
+
+            console.info( 'Haxe server started '+server.status );
+            statusBar.setServerStatus( server.status, server.exe, server.host, server.port );
         }
         server.onStop = function( code : Int ){
+
             console.info( 'Haxe server stopped ($code) '+server.status );
             statusBar.setServerStatus( server.status, server.exe, server.host, server.port );
-            if( commandBuild != null ) commandBuild.dispose();
+
             if( commandServerStop != null ) commandServerStop.dispose();
+            if( commandServerLogToggle != null ) commandServerLogToggle.dispose();
             commandServerStart = Atom.commands.add( 'atom-workspace', 'haxe:server-start', function(e) startServer() );
         }
         server.onError = function(msg){
             console.warn( msg );
-            trace(server.status);
             statusBar.setServerStatus( server.status, server.exe, server.host, server.port );
         }
         server.onMessage = function(msg){
@@ -191,7 +196,7 @@ class HaxeIDE {
                 for( line in lines ) {
                     if( line.startsWith( 'Time spent :' ) ) {
                         var info = line.substr(13);
-                        if( lines[i-1] != null )  info += lines[i-1].substr(8);
+                        if( lines[i-1] != null )  info += ', '+lines[i-1].substr(8);
                         statusBar.setMetaInfo( info );
                     } else {
                         statusBar.setMetaInfo( line );
@@ -209,6 +214,7 @@ class HaxeIDE {
         //subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(e) stopServer() ) );
         //subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe-ide:toggle-server-log', function(_) serverLog.toggle() ) );
         commandServerStart = Atom.commands.add( 'atom-workspace', 'haxe:server-start', function(_) startServer() );
+        commandBuild = Atom.commands.add( 'atom-workspace', 'haxe:build', function(_) build() );
         //commandServerStop = Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(_) stopServer() );
         //commandServerLogToggle = Atom.commands.add( 'atom-workspace', 'haxe:server-log-toggle', function(_) serverLog.toggle() );
         //commandBuild = Atom.commands.add( 'atom-workspace', 'haxe:build', function(_) build() );
@@ -271,18 +277,25 @@ class HaxeIDE {
 
         if( state.hxml == null ) {
             searchHxmlFiles( function(found){
-                if( found.length > 0 )
-                    state.setHxml( found[0] );
+                if( found.length > 0 ) state.setHxml( found[0] );
             });
         }
 
-        Timer.delay( startServer, getConfigValue( 'server_startdelay' ) * 1000 );
+        Timer.delay( function(){
+
+            getHaxeVersion(function(v:Version){
+                console.info( 'haxe '+v );
+                startServer();
+            });
+
+        }, getConfigValue( 'server_startdelay' ) * 1000 );
+
+        //trace( Atom.project.getPaths() );
     }
 
     static function deactivate() {
 
         //subscriptions.dispose();
-
         if( commandBuild != null ) commandBuild.dispose();
         if( commandServerStart != null ) commandServerStart.dispose();
         if( commandServerStop != null ) commandServerStop.dispose();
@@ -307,6 +320,17 @@ class HaxeIDE {
 
     public static function getConfigValue<T>( key : String ) : T {
         return Atom.config.get( 'haxe-ide.$key' );
+    }
+
+    public static function getHaxeVersion( callback : Version->Void ) {
+        var res : String = null;
+        var proc = spawn( getConfigValue( 'haxe_path' ), ['-version'] );
+        proc.stderr.on( 'data', function(e) {
+             res = e.toString();
+        });
+        proc.on( 'exit', function(code){
+            callback( res.trim() );
+        } );
     }
 
     public static function startServer() {
