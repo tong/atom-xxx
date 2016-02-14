@@ -1,23 +1,23 @@
 
-@import "vars";
+@import "haxe-ide-vars";
 
 @keyframes spin {
 	100% { transform: rotate(-360deg); }
 }
 
 .haxe-status {
+
+	color: @text-color;
+
+	/*
 	.success {
 		color: @text-color-success;
 	}
 	.error {
 		color: @text-color-error;
 	}
-	.hxml {
-		cursor: pointer;
-	}
-	.hxml:hover {
-		text-decoration: underline;
-	}
+	*/
+
 	.haxeicon {
 		display: inline-block;
 		width: 1em;
@@ -28,20 +28,59 @@
 		line-height: 1em;
 		margin-left: .2em;
 		-webkit-font-smoothing: antialiased;
-		-webkit-transition: color 0.2s;
 		transition: color 0.2s;
 		//will-change: color, transform;
+		color: @text-color;
 	}
 	.haxeicon:before {
 		content: '\e805';
 	}
-	.haxeicon.active {
-	    -webkit-animation: spin 0.5s linear infinite forwards;
-	    animation: spin 0.5s linear infinite forwards;
-		color: @text-color-highlight;
+	.haxeicon.off {
+		color: @input-background-color;
+		opacity: 0.8;
 	}
+	.haxeicon.idle {
+		color: @text-color;
+	}
+	.haxeicon.active {
+		color: @haxe-color-orange-1;
+		//color: @text-color-highlight;
+		opacity: 1;
+		animation: spin 0.5s linear infinite forwards;
+	}
+	.haxeicon.success {
+		color: @text-color;
+	}
+	.haxeicon.error {
+		color: @text-color-error;
+	}
+
+	.info {
+		color: @text-color;
+		cursor: pointer;
+	}
+	.info:hover {
+		text-decoration: underline;
+	}
+	.info.idle {
+		color: @text-color;
+	}
+	.info:active {
+		color: @haxe-color-orange-1;
+	}
+	.info.error {
+		color: @text-color-error;
+	}
+	.info.success {
+		color: @text-color-success;
+	}
+
 	.meta {
 		margin-left: 4px;
 		color: @text-color-subtle;
+	}
+
+	.tooltip {
+
 	}
 }

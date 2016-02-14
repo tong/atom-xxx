@@ -4,7 +4,7 @@ typedef HaxeServerStatus = {
     var exe : String;
     var host : String;
     var port : Int;
-    var running : Bool;
+    var status : ServerStatus;
 }
 
 typedef HaxeServerService = {

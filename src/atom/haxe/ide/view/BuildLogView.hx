@@ -12,25 +12,37 @@ using StringTools;
 class BuildLogView {
 
     public var element(default,null) : DivElement;
+    public var showLineNumbers(default,set) : Bool;
 
     var panel : atom.Panel;
-    var messages : DivElement;
+    var messageContainer : DivElement;
     var numMessages : Int;
+    var messages : Array<MessageView>;
 
     public function new() {
 
         element = document.createDivElement();
         element.classList.add( 'build-log' );
 
-        messages = document.createDivElement();
-        messages.classList.add( 'messages' );
-        element.appendChild( messages );
-
-        panel = Atom.workspace.addBottomPanel( { item: element, visible: false } );
+        messageContainer = document.createDivElement();
+        messageContainer.classList.add( 'messages' );
+        element.appendChild( messageContainer );
 
         element.addEventListener( 'contextmenu', handleRightClick, false );
 
+        panel = Atom.workspace.addBottomPanel( { item: element, visible: false } );
+
         numMessages = 0;
+        messages = [];
+
+        this.showLineNumbers = Atom.config.get( 'haxe-ide.buildlog_numbers' );
+    }
+
+    inline function set_showLineNumbers(v:Bool) : Bool {
+        //number.style.display = v ? 'inline-block' : 'none';
+        for( message in messages )
+            message.showLineNumber = v;
+        return showLineNumbers = v;
     }
 
     public inline function show() {
@@ -44,23 +56,32 @@ class BuildLogView {
     public function message( msg : String, ?status : String ) {
         if( msg != null && msg.length > 0 ) {
             numMessages++;
-            var view = new LogMessageView( msg, messages.children.length, status, numMessages );
-            messages.appendChild( view.element );
+            var view = new LogMessageView( msg, messages.length, status, numMessages, showLineNumbers );
+            messageContainer.appendChild( view.element );
+            messages.push( view );
         }
         return this;
     }
 
     public function error( err : ErrorMessage ) {
         numMessages++;
-        var view = new ErrorMessageView( err, messages.children.length, numMessages );
-        messages.appendChild( view.element );
+        var view = new ErrorMessageView( err, messages.length, numMessages, showLineNumbers );
+        messageContainer.appendChild( view.element );
+        messages.push( view );
+        return this;
+    }
+
+    public function meta( msg : String ) : BuildLogView {
+        var view = new MetaMessageView( msg );
+        messageContainer.appendChild( view.element );
         return this;
     }
 
     public function clear() {
-        while( messages.firstChild != null )
-            messages.removeChild( messages.firstChild );
+        while( messageContainer.firstChild != null )
+            messageContainer.removeChild( messageContainer.firstChild );
         numMessages = 0;
+        messages = [];
     }
 
     public function destroy() {
@@ -76,15 +97,19 @@ class BuildLogView {
     }
 
     function handleKeyDown(e) {
-        trace(e);
+        //trace(e);
     }
 }
 
 private class MessageView {
 
     public var element(default,null) : Element;
+    public var showLineNumber(get,set) : Bool;
 
-    function new( index : Int, num : Int ) {
+    var number : Element;
+    var content : Element;
+
+    function new( index : Int, num : Int, showLineNumber : Bool ) {
 
         //element = document.createElement( 'pre' );
         element = document.createDivElement();
@@ -92,12 +117,24 @@ private class MessageView {
         //element.setAttribute( 'tabindex', '$index' );
 
         //var messageNum = document.createElement( 'pre' );
-        var messageNum = document.createSpanElement( );
-        messageNum.classList.add( 'num' );
-        messageNum.textContent = Std.string( num );
-        element.appendChild( messageNum );
+        number = document.createSpanElement( );
+        number.classList.add( 'num' );
+        number.textContent = Std.string( num );
+        element.appendChild( number );
+
+        this.showLineNumber = showLineNumber;
+
+        content = document.createSpanElement();
+        content.classList.add( 'content' );
+        element.appendChild( content );
 
         element.addEventListener( 'click', handleClick, false );
+    }
+
+    inline function get_showLineNumber() : Bool return number.style.display == 'inline-block';
+    inline function set_showLineNumber(v:Bool) : Bool {
+        number.style.display = v ? 'inline-block' : 'none';
+        return v;
     }
 
     function copyToClipboard() {}
@@ -111,36 +148,65 @@ private class MessageView {
         var regexp = untyped __js__('/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g');
         var html = '';
         for( line in str.split( '\n' ) ) {
-            if( line.length == 0 )
+            if( (line = line.trim()).length == 0 ) {
                 continue;
+            }
             var ansiCodes : Array<String> = untyped line.match( regexp );
             if( ansiCodes != null && ansiCodes.length > 0 ) {
-                var ansiColor = Std.parseInt( ansiCodes[0].substr( 2, ansiCodes[0].length - 2 ) );
-                var colorClass = switch ansiColor {
-                    //case 30: '#000000';
-                    case 31: 'error icon-bug';
-                    case 32: 'success icon-check';
-                    //case 33: '#ffff00';
-                    case 34: 'debug';
-                    case 35: 'warning icon-alert';
-                    case 36: 'info icon-info';
-                    //case 37: '#ffffff';
-                    default: 'test';
-                }
-                if( colorClass != null ) {
-                    line = line.replace( ansiCodes[0], '<span class="$colorClass">' );
+                var ansiCode = Std.parseInt( ansiCodes[0].substr( 2, ansiCodes[0].length - 2 ) );
+                var ansiType = getAnsiType( ansiCode );
+                if( ansiType != null ) {
+                    var classes = '$ansiType';
+                    /*
+                    var icon = switch ansiType {
+                        case 'info': 'info';
+                        //case 'debug': 'debug';
+                        case 'warning': 'alert';
+                        case 'error': 'bug';
+                        case 'success': 'check';
+                        default: null;
+                    }
+                    if( icon != null ) {
+                        classes += ' icon icon-$icon';
+                        //line = '<i class="icon-$icon"/>'+line;
+                    }
+                    */
+                    line = line.replace( ansiCodes[0], '<span class="$classes">' );
                     line = line.replace( ansiCodes[1], '</span>' );
+
                 } else {
-                    line = line.replace( ansiCodes[0], '' );
-                    line = line.replace( ansiCodes[1], '' );
+                    line = line.replace( ansiCodes[0], '' ).replace( ansiCodes[1], '' );
                     line = '<span>$line</span>';
                 }
             } else {
                 line = '<span>$line</span>';
             }
-            html += line+'<br>';
+            html += line;//+'<br>';
         }
         return html;
+    }
+
+    static function getAnsiType( code : Int ) : String {
+        return switch code {
+            //case 30: '#000000';
+            case 31: 'error';
+            case 32: 'success';
+            //case 33: '#ffff00';
+            case 34: 'debug';
+            case 35: 'warning';
+            case 36: 'info';
+            //case 37: '#ffffff';
+            default: 'test';
+        }
+    }
+}
+
+private class MetaMessageView extends MessageView {
+
+    public function new( text : String ) {
+        super( -1, 0, false );
+        element.classList.add( 'meta' );
+        content.textContent = text;
     }
 }
 
@@ -148,22 +214,24 @@ private class LogMessageView extends MessageView {
 
     var text : String;
 
-    public function new( text : String, index : Int, ?status : String, num : Int ) {
+    public function new( text : String, index : Int, ?status : String, num : Int, showLineNumber : Bool ) {
 
-        super( index, num );
+        super( index, num, showLineNumber );
         this.text = text;
 
         if( status != null ) element.classList.add( status );
 
         //TODO
         //var content = document.createElement( 'pre' );
-        var content = document.createDivElement();
-        content.classList.add( 'content' );
+        //var content = document.createDivElement();
+        //content.classList.add( 'content' );
 
+        //trace(text);
         var html = MessageView.ansiToHTML( text );
+        //trace(html);
         content.innerHTML = html;
 
-        element.appendChild( content );
+        //element.appendChild( content );
     }
 
     override inline function copyToClipboard() {
@@ -175,9 +243,9 @@ private class ErrorMessageView extends MessageView {
 
     var error : ErrorMessage;
 
-    public function new( error : ErrorMessage, index : Int, num : Int ) {
+    public function new( error : ErrorMessage, index : Int, num : Int, showLineNumber : Bool ) {
 
-        super( index, num );
+        super( index, num, showLineNumber );
         this.error = error;
 
         element.classList.add( 'error' );
@@ -237,7 +305,7 @@ private class ErrorMessageView extends MessageView {
         var e = document.createAnchorElement();
         e.classList.add( 'link' );
         e.textContent = text;
-        element.appendChild( e );
+        content.appendChild( e );
         e.onclick = function(_) open( line );
         return e;
     }
@@ -246,6 +314,6 @@ private class ErrorMessageView extends MessageView {
         var e = document.createSpanElement();
         if( classes != null ) for( c in classes ) e.classList.add(c);
         e.textContent = text;
-        element.appendChild( e );
+        content.appendChild( e );
     }
 }

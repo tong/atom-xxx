@@ -5,20 +5,22 @@ import js.html.Element;
 import js.html.AnchorElement;
 import js.html.DivElement;
 import js.html.SpanElement;
-import om.Time.now;
+import haxe.ds.ObjectMap;
 
 class StatusBarView {
 
     public var element(default,null) : DivElement;
 
     var icon : SpanElement;
-    var text : AnchorElement;
+    var info : AnchorElement;
     var meta : SpanElement;
-    var tooltip : Disposable;
 
-    var path : String;
-    var currentStatus : BuildStatus;
-    var buildStartTime : Float;
+    var serverStatus : ServerStatus;
+    var buildStatus : BuildStatus;
+    var buildFile : String;
+    //var path : String;
+    //var buildStartTime : Float;
+    var tooltips : ObjectMap<Element,Disposable>;
 
     public function new() {
 
@@ -30,81 +32,98 @@ class StatusBarView {
         icon.classList.add( 'haxeicon' );
         element.appendChild( icon );
 
-        text = document.createAnchorElement();
-        text.classList.add( 'hxml' );
-        element.appendChild( text );
+        info = document.createAnchorElement();
+        info.classList.add( 'info' );
+        element.appendChild( info );
 
         meta = document.createSpanElement();
         meta.classList.add( 'meta' );
         element.appendChild( meta );
 
-        text.addEventListener( 'click', handleClickText, false );
-        text.addEventListener( 'contextmenu', handleRightClickText, false );
+        info.addEventListener( 'click', handleClickText, false );
+        info.addEventListener( 'contextmenu', handleRightClickText, false );
+
+        tooltips = new ObjectMap();
+
+        //Atom.contextMenu.add({
     }
 
-    public function setServerStatus( exe : String, host : String, port : Int, running : Bool ) {
-        if( running ) {
-            var str = '$host:$port';
-            if( exe != 'haxe' ) str = '$exe $str';
-            icon.title = str;
-        } else {
-            icon.title = 'Server not running';
-        }
+    public function set( ?buildFile : String, ?buildStatus : BuildStatus, ?meta : String ) {
+        if( buildFile != null ) setBuildFile( buildFile );
+        if( buildStatus != null ) setBuildStatus( buildStatus );
+        if( meta != null ) setMetaInfo( meta );
     }
 
-    public function setBuildPath( path : String ) {
-        if( path != null ) {
-            this.path = path;
-            setTooltip( path );
-            var pathParts = Atom.project.relativizePath( path );
-            if( pathParts[0] != null ) {
-                var projectPathParts = pathParts[0].split( '/' );
-                var str = projectPathParts[projectPathParts.length-1]+'/'+pathParts[1];
-                text.textContent = str;
+    public function setServerStatus( status : ServerStatus, exe : String, host : String, port : Int ) {
+        if( status != serverStatus ) {
+            if( serverStatus != null ) icon.classList.remove( serverStatus );
+            icon.classList.add( status );
+            addTooltip( icon, '$port:$status' );
+            /*
+            if( status == off ) {
+            } else {
+                addTooltip( icon, '$port:$status' );
             }
+            */
+        }
+        serverStatus = status;
+    }
+
+    public function setBuildFile( buildFile : String ) {
+        if( buildFile != null ) {
+            this.buildFile = buildFile;
+            var parts = Atom.project.relativizePath( buildFile );
+            if( parts[0] != null ) {
+                var projectParts = parts[0].split( '/' );
+                var str = projectParts[projectParts.length-1]+'/'+parts[1];
+                info.textContent = str;
+            }
+            addTooltip( info, buildFile );
         } else {
-            text.textContent = "";
+            info.textContent = "";
+            info.classList.remove( buildStatus );
+            removeTooltip( info );
         }
     }
 
     public function setBuildStatus( status : BuildStatus ) {
-
-        for( e in [icon,text] ) {
-            e.classList.remove( currentStatus );
-            e.classList.add( status );
+        if( status != buildStatus ) {
+            for( e in [icon,info] ) {
+                if( e.classList.contains( buildStatus ) ) e.classList.remove( buildStatus );
+                e.classList.add( status );
+            }
         }
-
-        currentStatus = status;
-
-        switch status {
-        case active:
-            buildStartTime = now();
-        case success:
-            var elapsedStr = Std.string( Std.int( now() - buildStartTime ) );
-            elapsedStr = elapsedStr.substr( 0, elapsedStr.indexOf( '.' )+2 );
-            meta.textContent = elapsedStr+'ms';
-        default:
-        }
+        buildStatus = status;
     }
 
     public inline function setMetaInfo( text : String ) {
         meta.textContent = text;
-    }
-
-    public inline function set( path : String, status : BuildStatus ) {
-        setBuildPath( path );
-        setBuildStatus( status );
+        addTooltip( meta, text );
     }
 
     public function destroy() {
-        if( tooltip != null ) tooltip.dispose();
-        text.removeEventListener( 'click', handleClickText );
-        text.removeEventListener( 'contextmenu', handleRightClickText );
+        info.removeEventListener( 'click', handleClickText );
+        info.removeEventListener( 'contextmenu', handleRightClickText );
+        for( tip in tooltips ) tip.dispose();
+        tooltips = new ObjectMap();
     }
 
-    function setTooltip( title : String ) {
-        if( tooltip != null ) tooltip.dispose();
-        tooltip = Atom.tooltips.add( element, { title: title } );
+    function addTooltip( element : Element, title : String, ?keyBindingCommand : String ) {
+        removeTooltip( element );
+        var tip = Atom.tooltips.add( element, untyped {
+            title: '<div>'+title.split(', ').join('<br>')+'</div>',
+            html: true,
+            keyBindingCommand: keyBindingCommand,
+            //template: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+        } );
+        tooltips.set( element, tip );
+    }
+
+    function removeTooltip( element : Element ) {
+        if( tooltips.exists( element ) ) {
+            tooltips.get( element ).dispose();
+            tooltips.remove( element );
+        }
     }
 
     function handleClickText(e) {
@@ -112,7 +131,7 @@ class StatusBarView {
     }
 
     function handleRightClickText(e) {
-        Atom.workspace.open( path );
+        if( buildFile != null ) Atom.workspace.open( buildFile );
     }
 
 }

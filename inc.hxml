@@ -1,5 +1,6 @@
 -js lib/haxe-ide.js
 -lib hxatom
+-lib haxeparser
 -cp src
 -cp ../../lib/om.core/src
 -cp ../../lib/om.haxeutils/src

@@ -18,6 +18,7 @@ import atom.haxe.ide.view.StatusBarView;
 import atom.haxe.ide.view.ServerLogView;
 import atom.haxe.ide.view.OutlineView;
 import Atom.notifications;
+import om.Time;
 
 using StringTools;
 using haxe.io.Path;
@@ -38,20 +39,20 @@ class HaxeIDE {
             "default": "haxe"
         },
 
-        server_port: {
-            "title": "Haxe server port",
+        haxe_server_port: {
+            "title": "Haxe Server Port",
             "description": "The port number the haxe server will listen.",
             "type": "integer",
             "default": 7000
         },
-        server_host: {
-            "title": "Haxe server host name",
+        haxe_server_host: {
+            "title": "Haxe Server Host Name",
             "description": "The ip adress the haxe server will listen.",
             "type": "string",
             "default": "127.0.0.1"
         },
-        server_startdelay:{
-            "title": 'Haxe server activation delay',
+        haxe_server_startdelay:{
+            "title": 'Haxe Server Activation Delay',
             "description": 'The delay in seconds before starting the haxe server.',
             "type": 'integer',
             "minimum": 0,
@@ -64,8 +65,35 @@ class HaxeIDE {
             "type": "boolean",
             "default": true
         },
+        buildlog_ansi_colors: {
+            "title": "ANSI Colors",
+            "description": "Print colors from ANSI codes",
+            "type": "boolean",
+            "default": true
+        },
+        buildlog_print_command: {
+            "title": "Print Haxe Build Command",
+            "description": "",
+            "type": "boolean",
+            "default": true
+        },
+
+        serverlog_max_messages:{
+            "title": 'Max ServerLog Messages',
+            "description": 'Maximal messages to hold in serverlog history',
+            "type": 'integer',
+            "minimum": 0,
+            "default": 1000
+        }
 
         /*
+        serverlog_max_messages:{
+        "title": 'Serverlog Max Messages',
+        "description": '',
+        "type": 'integer',
+        "minimum": 0,
+        "default": 1000
+        },
         build_server_enabled: {
             "title": "Enable/Disable haxe build server",
             "description": "Enables/Disables to start an internal build server",
@@ -87,147 +115,222 @@ class HaxeIDE {
             "default": true
         }
 
-        haxelib_path: {
-            title: 'Haxelib executable path',
-            description: 'Only needed if you have configured a custom Haxelib location.',
-            type: 'string',
-            default:'haxelib'
-        },
-
         autocomplete_enabled: {
             "title": "Autocomplete",
             "description": "Enables/Disables haxe autocompletion",
             "type": "boolean",
             "default": false
         }
+
+        hxml_template: {
+            title: '.hxml template file',
+            description: '',
+            type: 'string',
+            default:'haxe-ide/template/new.hxml'
+        },
+
         */
     };
 
     public static var state(default,null) : atom.haxe.ide.State;
     public static var server(default,null) : atom.haxe.ide.Server;
 
-    static var subscriptions : CompositeDisposable;
+    //static var subscriptions : CompositeDisposable;
     static var configChangeListener : Disposable;
 
-    static var log : BuildLogView;
-    static var statusbar : StatusBarView;
-    static var serverlog : ServerLogView;
+    static var statusBar : StatusBarView;
+    static var buildLog : BuildLogView;
+    static var serverLog : ServerLogView;
     //static var outline : OutlineView;
 
-    static function activate( savedState ) {
+    static var commandServerStop : Disposable;
+    static var commandServerStart : Disposable;
+    static var commandBuild : Disposable;
+    static var commandServerLogToggle : Disposable;
 
-        trace( 'Atom-haxe-ide' );
+    static function activate( savedState : Dynamic ) {
 
-        state = new atom.haxe.ide.State( savedState );
-        if( state.hxml == null ) {
-            searchHxmlFiles(function(found){
-                if( found.length > 0 )
-                    state.setPath( found[0] );
-            });
-        }
+        trace( 'Atom-haxe-ide '+savedState );
 
-        statusbar = new StatusBarView();
-        log = new BuildLogView();
-        serverlog = new ServerLogView();
+        state = new atom.haxe.ide.State( savedState.state );
+
+        statusBar = new StatusBarView();
+        buildLog = new BuildLogView();
+        serverLog = new ServerLogView();
         //outline = new OutlineView();
         //outline.show();
 
+        if( savedState.serverLogVisible ) {
+            serverLog.show();
+        }
+
         server = new atom.haxe.ide.Server();
         server.onStart = function(){
-            console.info( 'Haxe server started' );
-            statusbar.setServerStatus( server.exe, server.host, server.port, server.running );
+            console.info( 'Haxe server started '+server.status );
+            statusBar.setServerStatus( server.status, server.exe, server.host, server.port );
+            if( commandServerStart != null ) commandServerStart.dispose();
+            commandServerStop = Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(e) stopServer() );
+            commandBuild = Atom.commands.add( 'atom-workspace', 'haxe:build', function(_) build() );
         }
         server.onStop = function( code : Int ){
-            console.info( 'Haxe server stopped ($code)' );
+            console.info( 'Haxe server stopped ($code) '+server.status );
+            statusBar.setServerStatus( server.status, server.exe, server.host, server.port );
+            if( commandBuild != null ) commandBuild.dispose();
+            if( commandServerStop != null ) commandServerStop.dispose();
+            commandServerStart = Atom.commands.add( 'atom-workspace', 'haxe:server-start', function(e) startServer() );
         }
         server.onError = function(msg){
             console.warn( msg );
+            trace(server.status);
+            statusBar.setServerStatus( server.status, server.exe, server.host, server.port );
         }
         server.onMessage = function(msg){
-            serverlog.add( msg );
-            //statusbar.setMetaInfo( msg );
+            var lines = serverLog.add( msg );
+            if( lines != null ) {
+                var i = 0;
+                for( line in lines ) {
+                    if( line.startsWith( 'Time spent :' ) ) {
+                        var info = line.substr(13);
+                        if( lines[i-1] != null )  info += lines[i-1].substr(8);
+                        statusBar.setMetaInfo( info );
+                    } else {
+                        statusBar.setMetaInfo( line );
+                    }
+                    i++;
+                }
+            }
         }
 
-        subscriptions = new CompositeDisposable();
-        subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:build', build ) );
-        subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:server-start', function(e) startServer() ) );
-        subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(e) stopServer() ) );
-        subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe-ide:toggle-server-log', function(_) serverlog.toggle() ) );
+        //var parser = new atom.haxe.ide.HaxeParser();
+
+        //subscriptions = new CompositeDisposable();
+        //subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:build', function(_) build() ) );
+        //subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:server-start', function(e) startServer() ) );
+        //subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(e) stopServer() ) );
+        //subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe-ide:toggle-server-log', function(_) serverLog.toggle() ) );
+        commandServerStart = Atom.commands.add( 'atom-workspace', 'haxe:server-start', function(_) startServer() );
+        //commandServerStop = Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(_) stopServer() );
+        //commandServerLogToggle = Atom.commands.add( 'atom-workspace', 'haxe:server-log-toggle', function(_) serverLog.toggle() );
+        //commandBuild = Atom.commands.add( 'atom-workspace', 'haxe:build', function(_) build() );
 
         configChangeListener = Atom.config.onDidChange( 'haxe-ide', {}, function(e){
-            //TODO check which option has changed
+
+            //!TODO check which option has changed
+            trace(e);
+
             server.stop();
-            server.start( e.newValue.haxe_path, e.newValue.server_port, e.newValue.server_host );
-        });
+            server.start( e.newValue.haxe_path, e.newValue.server_port, e.newValue.server_host, function(){
 
-        Timer.delay(function(){
-            server.start(
-                Atom.config.get( 'haxe-ide.haxe_path' ),
-                Atom.config.get( 'haxe-ide.server_port' ),
-                Atom.config.get( 'haxe-ide.server_host' )
-            );
-        }, Atom.config.get( 'haxe-ide.server_startdelay' ) * 1000 );
-
-        Atom.workspace.observeTextEditors(function(editor){
-            editor.onDidSave(function(e){
-                var path = editor.getPath();
-                if( path.extension() == 'hx' && editor.getText().trim().length == 0 ) {
-                    var projectPath = Atom.project.getPaths()[0];
-                    var path = e.path;
-                    var relPath = path.substr( projectPath.length + 1 );
-                    var parts = relPath.split('/');
-                    if( parts[0] == 'src' ) parts.shift(); //TODO
-                    var file = parts.pop().split('.')[0];
-                    var pack = parts.join('.');
-                    var tpl = 'package $pack;\n\nclass $file {\n\n\tpublic function new() {\n\t}\n}\n';
-                    editor.setText( tpl );
-                    editor.moveUp(2);
-                    editor.moveToEndOfLine();
-                    editor.save();
-                }
             });
         });
+
+        Atom.workspace.observeTextEditors(function(editor){
+            /*
+            var path = editor.getPath();
+            var ext = path.extension();
+            if( ext == null )
+                return;
+            switch ext {
+            case 'hx':
+                //TODO
+                /*
+                editor.onDidChange(function(){
+                    console.time("haxeparse");
+                    parser.parse( editor.getText(), editor.getPath(), function(e){
+                        console.timeEnd( "haxeparse" );
+                        console.debug( e.pack.join('.')+';' );
+                        for( decl in e.decls ) trace(decl);
+                    });
+                });
+                * /
+                editor.onDidSave(function(e){
+                    if( editor.getText().trim().length == 0 ) {
+                        var projectPath = Atom.project.getPaths()[0];
+                        var path = e.path;
+                        var relPath = path.substr( projectPath.length + 1 );
+                        var parts = relPath.split('/');
+                        if( parts[0] == 'src' ) parts.shift(); //TODO
+                        var file = parts.pop().split('.')[0];
+                        var pack = parts.join('.');
+                        var tpl = 'package $pack;\n\nclass $file {\n\n\tpublic function new() {\n\t}\n}\n';
+                        editor.setText( tpl );
+                        editor.moveUp(2);
+                        editor.moveToEndOfLine();
+                        editor.save();
+                    }
+                });
+            case 'hxml':
+                //TODO insert empty hxml snippet
+                /*
+                if( editor.getText().trim().length == 0 ) {
+                }
+                * /
+            }
+            */
+        });
+
+        if( state.hxml == null ) {
+            searchHxmlFiles( function(found){
+                if( found.length > 0 )
+                    state.setHxml( found[0] );
+            });
+        }
+
+        Timer.delay( startServer, getConfigValue( 'server_startdelay' ) * 1000 );
     }
 
     static function deactivate() {
 
-        subscriptions.dispose();
+        //subscriptions.dispose();
+
+        if( commandBuild != null ) commandBuild.dispose();
+        if( commandServerStart != null ) commandServerStart.dispose();
+        if( commandServerStop != null ) commandServerStop.dispose();
+        if( commandServerLogToggle != null ) commandServerLogToggle.dispose();
+
         configChangeListener.dispose();
 
         server.stop();
 
-        log.destroy();
-        statusbar.destroy();
-        serverlog.destroy();
+        statusBar.destroy();
+        buildLog.destroy();
+        serverLog.destroy();
     }
 
     static function serialize() {
-        return state.serialize();
+        return {
+            state: state.serialize(),
+            //server: server.serialize()
+            serverLogVisible: serverLog.isVisible()
+        };
     }
 
-    ////////////////////////////////////////////////////////////////////////////
+    public static function getConfigValue<T>( key : String ) : T {
+        return Atom.config.get( 'haxe-ide.$key' );
+    }
 
-    static function startServer() {
+    public static function startServer() {
         server.start(
-            Atom.config.get( 'haxe-ide.haxe_path' ),
-            Atom.config.get( 'haxe-ide.server_port' ),
-            Atom.config.get( 'haxe-ide.server_host' )
+            getConfigValue( 'haxe_path' ),
+            getConfigValue( 'haxe_server_port' ),
+            getConfigValue( 'haxe_server_host' ),
+            function(){}
         );
     }
 
-    static function stopServer() {
+    public static inline function stopServer() {
         server.stop();
     }
 
-    ////////////////////////////////////////////////////////////////////////////
+    public static function build() {
 
-    static function build(e) {
+        //TODO test if (re)build is required
 
-        log.clear();
+        buildLog.clear();
 
         var treeViewFile = getTreeViewFile();
         if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
-            state.setPath( treeViewFile );
+            state.setHxml( treeViewFile );
         } else if( state.hxml == null ) {
             notifications.addWarning( 'No hxml file selected' );
             return;
@@ -236,23 +339,21 @@ class HaxeIDE {
         Fs.readFile( state.hxml, {encoding:'utf8'}, function(e,r){
 
             if( e != null ) {
-                notifications.addError( 'Failed to read hxml file: '+state.hxml );
+                notifications.addWarning( 'Invalid hxml file: '+state.hxml );
                 return;
             }
 
-            statusbar.set( state.hxml, active );
+            statusBar.set( state.hxml, active );
 
-            //var dirPath = state.dir;
-            //var filePath = hxmlFile.withoutDirectory();
-
-            var args = [ '--cwd', state.dir ];
-            if( server.running ) {
+            var args = [ '--cwd', state.cwd ];
+            if( server.status != off ) {
                 //TODO why not write directly to stdin of server process ?
                 //server.stdin.write();
                 args.push( '--connect' );
                 args.push( Std.string( server.port ) );
             }
-            //args.push('--times'); //TODO
+            //args.push('--times'); statusBar.setMetaInfo( line );//TODO
+            //trace(args);
 
             // HACK
             var tokens = Hxml.parseTokens( r );
@@ -271,13 +372,13 @@ class HaxeIDE {
             var build = new Build( Atom.config.get( 'haxe-ide.haxe_path' ) );
 
             build.onMessage = function(msg){
-                log.message( msg );
-                log.show();
+                buildLog.message( msg );
+                buildLog.show();
             }
 
             build.onError = function(msg){
 
-                statusbar.setBuildStatus( error );
+                statusBar.setBuildStatus( error );
 
                 if( msg != null ) {
 
@@ -289,19 +390,19 @@ class HaxeIDE {
                         if( err != null ) {
                             haxeErrors.push( err );
                         } else {
-                            log.message( line, 'error' );
+                            buildLog.message( line, 'error' );
                         }
                     }
                     if( haxeErrors.length > 0 ) {
 
                         for( e in haxeErrors )
-                            log.error( e );
+                            buildLog.error( e );
 
                         var err = haxeErrors[0];
 
                         if( err.path != '--macro' ) {
 
-                            var filePath = err.path.startsWith('/') ? err.path : state.dir+'/'+err.path;
+                            var filePath = err.path.startsWith('/') ? err.path : state.cwd+'/'+err.path;
 
                             //TODO check if error at std and avoid opening if configured
                             //TODO .. better check against a custom blacklist
@@ -312,7 +413,6 @@ class HaxeIDE {
                                 if( err.lines != null ) err.lines.start;
                                 else if( err.characters != null ) err.characters.start;
                                 else err.character;
-
 
                             Atom.workspace.open( filePath, {
                                 initialLine: line,
@@ -345,12 +445,17 @@ class HaxeIDE {
                         }
                     }
 
-                    log.show();
+                    buildLog.show();
                 }
             }
 
             build.onSuccess = function() {
-                statusbar.setBuildStatus( success );
+                statusBar.setBuildStatus( success );
+            }
+
+            //if( Atom.config.get( 'haxe.haxe_path' ) )
+            if( getConfigValue( 'buildlog_print_command' ) ) {
+                buildLog.meta( args.join( ' ' ) );
             }
 
             build.start( args );
@@ -360,7 +465,7 @@ class HaxeIDE {
     ////////////////////////////////////////////////////////////////////////////
 
     static function consumeStatusBar( bar ) {
-        bar.addLeftTile( { item: statusbar.element, priority:-10 } );
+        bar.addLeftTile( { item: statusBar.element, priority:-10 } );
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -368,13 +473,10 @@ class HaxeIDE {
     static function provideServerService() : HaxeServerService {
         return {
             getStatus: function(){
-                return { exe:server.exe, host:server.host, port:server.port, running:server.running };
+                return { exe:server.exe, host:server.host, port:server.port, status:server.status };
             },
             start: function(){
-                server.start(
-                    Atom.config.get( 'haxe.haxe_path' ),
-                    Atom.config.get( 'haxe.server_port' ),
-                    Atom.config.get( 'haxe.server_host' ) );
+                startServer();
             },
             stop: function(){
                 server.stop();
@@ -385,16 +487,13 @@ class HaxeIDE {
     static function provideBuildService() : HaxeBuildService {
         return {
             build : function( args:Array<String>, onMessage : String->Void, onError : String->Void, onSuccess : Void->Void ) {
-
-                if( server.running ) {
+                if( server.status != off ) {
                     args.push( '--connect' );
                     args.push( Std.string( server.port ) );
                 }
-
                 //TODO
                 //_build();
                 //log.clear();
-
                 //var startTime = now();
                 var build = new atom.haxe.ide.Build( Atom.config.get( 'haxe-ide.haxe_path' ) );
                 build.onMessage = onMessage;
@@ -412,28 +511,25 @@ class HaxeIDE {
     }
 
     static function provideAutoCompletion() {
-        return if( Atom.config.get( 'haxe-ide.autocomplete_enabled' ) )
-            new atom.haxe.ide.CompletionProvider();
-        else
-            null;
+        return getConfigValue( 'autocomplete_enabled' ) ? new atom.haxe.ide.CompletionProvider() : null;
     }
 
     ////////////////////////////////////////////////////////////////////////////
 
-    static function fileExists( path : String ) : Bool {
+    static inline function fileExists( path : String ) : Bool {
 		return try { Fs.accessSync(path); true; } catch (_:Dynamic) false;
 	}
 
-    static function getTreeViewFile() : String {
+    static inline function getTreeViewFile() : String {
         return Atom.packages.getLoadedPackage( 'tree-view' ).serialize().selectedPath;
     }
 
-    static function searchHxmlFiles( cb : Array<String>->Void ) {
+    static function searchHxmlFiles( callback : Array<String>->Void ) {
         var paths = Atom.project.getPaths();
-        (paths.length == 0) ? cb([]) : _searchHxmlFiles( paths, [], cb );
+        (paths.length == 0) ? callback([]) : _searchHxmlFiles( paths, [], callback );
     }
 
-    static function _searchHxmlFiles( paths : Array<String>, found : Array<String>, cb : Array<String>->Void ) {
+    static function _searchHxmlFiles( paths : Array<String>, found : Array<String>, callback : Array<String>->Void ) {
         var path = paths.shift();
         Fs.readdir( path, function(err,files){
             for( f in files ) {
@@ -441,9 +537,9 @@ class HaxeIDE {
                     found.push( '$path/$f' );
             }
             if( paths.length == 0 )
-                cb( found );
+                callback( found );
             else
-                _searchHxmlFiles( paths, found, cb );
+                _searchHxmlFiles( paths, found, callback );
         });
     }
 }

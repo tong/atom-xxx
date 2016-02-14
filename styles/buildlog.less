@@ -1,5 +1,6 @@
 
-@import "vars";
+@import "haxe-ide-vars";
+@import "ui-variables";
 
 @message-height: 16px;
 
@@ -8,6 +9,9 @@
 	padding: 0;
 	overflow-y: auto;
 	border-left: 1px solid @pane-item-border-color;
+
+	.messages {
+	}
 
 	.message:not(:last-child) {
 		border-bottom: 1px dotted @pane-item-border-color;
@@ -23,6 +27,12 @@
 		color: @text-color-error;
 	}
 	*/
+
+	.message.meta {
+		color: @text-color-subtle;
+		font-size: 85%;
+		//background: @base-background-color;
+	}
 
 	.message {
 

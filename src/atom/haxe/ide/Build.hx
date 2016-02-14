@@ -11,17 +11,18 @@ class Build {
     public dynamic function onError( msg : String ) {}
     public dynamic function onSuccess() {}
 
-    public var exe(default,null) : String;
+    public var haxePath(default,null) : String;
 
     var proc : ChildProcess;
     var error : String;
 
-    public function new( exe : String ) {
-        this.exe = exe;
+    public function new( haxePath : String ) {
+        this.haxePath = haxePath;
     }
 
     public function start( args : Array<String> ) {
-        proc = spawn( exe, args );
+        trace( 'haxe '+args.join( ' ' ) );
+        proc = spawn( haxePath, args );
         proc.stdout.on( 'data', handleData );
         proc.stderr.on( 'data', handleError );
         proc.on( 'exit', handleExit );

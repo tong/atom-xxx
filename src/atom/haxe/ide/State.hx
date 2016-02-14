@@ -7,45 +7,51 @@ using haxe.io.Path;
 using sys.FileSystem;
 
 private typedef TState = {
+    var cwd : String;
     var hxml : String;
-    var dir : String;
 }
 
 @:keep
 class State {
 
+    public var cwd(default,null) : String;
     public var hxml(default,null) : String;
-    public var dir(default,null) : String;
-    //public var tokens(default,null) : Array<String>;
-    //public var isDebug(default,null) : Bool;
+    public var tokens(default,null) : Array<String>;
+    public var isDebug(get,null) : Bool;
 
     public function new( state : TState ) {
-        if( state != null && state.hxml.exists() && state.dir.exists() ) {
-            set( state.hxml, state.dir );
+        if( state != null && state.cwd.exists() && state.hxml.exists() ) {
+            set( state.cwd, state.hxml );
         }
     }
 
-    public inline function set( hxml : String, dir : String ) {
+    inline function get_isDebug() : Bool return hasToken( '-debug' );
+
+    public inline function set( cwd : String, hxml : String ) {
+
+        this.cwd = cwd;
         this.hxml = hxml;
-        this.dir = dir;
-        //tokens = Hxml.parseTokens( File.getContent( hxml ) );
+
+        tokens = Hxml.parseTokens( File.getContent( hxml ) );
         //isDebug = hasToken( '-debug' );
     }
 
-    public inline function setPath( hxmlFilePath : String ) {
-        set( hxmlFilePath, hxmlFilePath.directory() );
+    public inline function setHxml( path : String ) {
+        set( path.directory(), path );
+    }
+
+    public inline function hasToken( token : String ) : Bool {
+        return Lambda.has( tokens, token );
+    }
+
+    public inline function getDefine( token : String ) : Bool {
+        return Lambda.has( tokens, token );
     }
 
     public function serialize() {
         return {
-            hxml: hxml,
-            dir: dir
+            cwd: cwd,
+            hxml: hxml
         };
     }
-
-    /*
-    public function hasToken( token : String ) : Bool {
-        return Lambda.has( tokens, token );
-    }
-    */
 }

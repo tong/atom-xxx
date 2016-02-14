@@ -1,5 +1,5 @@
 
-@import "vars";
+@import "haxe-ide-vars";
 
 .server-log {
 
@@ -9,11 +9,16 @@
 	min-width: 200px;
 	max-width: 600px;
     overflow-y: auto;
-    border-left: 1px solid @pane-item-border-color;
+
     padding-top: 3px;
     padding-bottom: 6px;
-    font-family: @font-family-mono;
     line-height: 12px;
+
+    font-family: @font-family-mono;
+
+    color: @text-color-subtle;
+    border-left: 1px solid @pane-item-border-color;
+
     cursor: default;
 
 	.messages {
@@ -25,6 +30,7 @@
 			padding: 1px 4px 0px 6px;
 			white-space: pre-wrap;
 			color: @text-color;
+            font-size: 90%;
 		}
 
 		.message:not(:last-child) {
