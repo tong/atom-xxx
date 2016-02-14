@@ -17,7 +17,7 @@ class ServerLogView {
     var element : DivElement;
     var messages : DivElement;
 
-    function new() {
+    public function new() {
 
         maxMessages = HaxeIDE.getConfigValue( 'serverlog_max_messages' );
 

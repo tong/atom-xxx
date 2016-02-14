@@ -116,9 +116,9 @@ class HaxeIDE {
     public static var state(default,null) : atom.haxe.ide.State;
     public static var server(default,null) : atom.haxe.ide.Server;
 
-    static var statusBar : StatusBarView;
-    static var buildLog : BuildLogView;
-    static var serverLog : ServerLogView;
+    public static var serverLog(default,null) : ServerLogView;
+    public static var statusBar(default,null) : StatusBarView;
+    public static var buildLog(default,null) : BuildLogView;
     //static var outline : OutlineView;
 
     //static var subscriptions : CompositeDisposable;
@@ -137,13 +137,13 @@ class HaxeIDE {
 
         statusBar = new StatusBarView();
         buildLog = new BuildLogView();
-        //serverLog = new ServerLogView();
+        serverLog = new ServerLogView();
         //outline = new OutlineView();
 
         Atom.deserializers.add( ServerLogView );
 
-        if( savedState.serverLogVisible ) {
-            //serverLog.show();
+        if( savedState.serverLog.visible ) {
+            serverLog.show();
         }
 
         server = new atom.haxe.ide.Server();
@@ -190,20 +190,18 @@ class HaxeIDE {
 
         //subscriptions = new CompositeDisposable();
         //subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:build', function(_) build() ) );
-        //subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:server-start', function(e) startServer() ) );
-        //subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(e) stopServer() ) );
-        //subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe-ide:toggle-server-log', function(_) serverLog.toggle() ) );
         commandServerStart = Atom.commands.add( 'atom-workspace', 'haxe:server-start', function(_) startServer() );
         commandBuild = Atom.commands.add( 'atom-workspace', 'haxe:build', function(_) build() );
 
         configChangeListener = Atom.config.onDidChange( 'haxe-ide', {}, function(e){
-            //!TODO check which option has changed
-            trace(e);
-            /*
-            server.stop();
-            server.start( e.newValue.haxe_path, e.newValue.server_port, e.newValue.server_host, function(){
-            });
-            */
+            var nv = e.newValue;
+            var ov = e.newValue;
+            if( nv.haxe_path != ov.haxe_path ||
+                nv.haxe_server_port != ov.haxe_server_port ||
+                nv.haxe_server_host != ov.haxe_server_host ) {
+                    server.stop();
+                    Timer.delay( startServer, getConfigValue( 'server_startdelay' ) * 1000 );
+                }
         });
 
         Atom.workspace.observeTextEditors(function(editor){
@@ -284,14 +282,16 @@ class HaxeIDE {
             */
 
             //TODO try to kill process ?
-
-            getHaxeVersion(function(e:String,v:Version){
+            /*
+            getHaxeVersion(function(e:String,v:String){
                 if( e != null ) {
                     startServer();
                 } else {
                     console.info( 'haxe version $v' );
                 }
             });
+            */
+            startServer();
 
         }, getConfigValue( 'server_startdelay' ) * 1000 );
 
@@ -306,9 +306,9 @@ class HaxeIDE {
         if( commandServerStop != null ) commandServerStop.dispose();
         if( commandServerLogToggle != null ) commandServerLogToggle.dispose();
 
-        configChangeListener.dispose();
-
         server.stop();
+
+        configChangeListener.dispose();
 
         statusBar.destroy();
         buildLog.destroy();
@@ -323,7 +323,7 @@ class HaxeIDE {
         };
     }
 
-    public static function getConfigValue<T>( key : String ) : T {
+    public static inline function getConfigValue<T>( key : String ) : T {
         return Atom.config.get( 'haxe-ide.$key' );
     }
 
@@ -332,22 +332,25 @@ class HaxeIDE {
         if( paths.length == 0 )  callback([]) else _searchHxmlFiles( paths, [], callback );
     }
 
-    public static function getHaxeVersion( ?exePath : String, callback : String->Version->Void ) {
+    public static function getHaxeVersion( ?exePath : String, callback : String->String->Void ) {
         if( exePath == null ) exePath = getConfigValue( 'haxe_path' );
-        var res : String = null;
+        var res : String = '';
         var proc = spawn( exePath, ['-version'] );
-        proc.stderr.on( 'data', function(e) res = e.toString() );
+        proc.stderr.on( 'data', function(e) res += e.toString() );
         proc.on( 'exit', function(code) {
             switch code {
             case 0:
                 if( res != null ) res = res.trim();
                 callback( null, res );
-            default: callback( res, null );
+            default:
+                callback( res, null );
             }
         });
     }
 
     public static function startServer() {
+        if( server.status != off )
+            server.stop();
         server.start(
             getConfigValue( 'haxe_path' ),
             getConfigValue( 'haxe_server_port' ),
@@ -366,8 +369,8 @@ class HaxeIDE {
 
         buildLog.clear();
 
-        var treeViewFile = getTreeViewFile();
-        if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
+        var treeViewFile = getTreeViewFile( 'hxml' );
+        if( treeViewFile != null ) {
             state.setHxml( treeViewFile );
         } else if( state.hxml == null ) {
             notifications.addWarning( 'No hxml file selected' );
@@ -411,9 +414,7 @@ class HaxeIDE {
             //args.push('--times'); statusBar.setMetaInfo( line );//TODO
             //trace(args);
 
-
-
-            var build = new Build( Atom.config.get( 'haxe-ide.haxe_path' ) );
+            var build = new Build( getConfigValue( 'haxe_path' ) );
 
             build.onMessage = function(msg){
                 buildLog.message( msg );
@@ -497,7 +498,6 @@ class HaxeIDE {
                 statusBar.setBuildStatus( success );
             }
 
-            //if( Atom.config.get( 'haxe.haxe_path' ) )
             if( getConfigValue( 'buildlog_print_command' ) ) {
                 buildLog.meta( args.join( ' ' ) );
             }
@@ -516,6 +516,11 @@ class HaxeIDE {
 
     static function provideServerService() : HaxeServerService {
         return {
+            /*
+            getVersion: function(){
+                //return { exe:server.exe, host:server.host, port:server.port, status:server.status };
+            },
+            */
             getStatus: function(){
                 return { exe:server.exe, host:server.host, port:server.port, status:server.status };
             },
@@ -564,8 +569,9 @@ class HaxeIDE {
 		return try { Fs.accessSync(path); true; } catch (_:Dynamic) false;
 	}
 
-    static inline function getTreeViewFile() : String {
-        return Atom.packages.getLoadedPackage( 'tree-view' ).serialize().selectedPath;
+    static inline function getTreeViewFile( ext : String ) : String {
+        var path : String = Atom.packages.getLoadedPackage( 'tree-view' ).serialize().selectedPath;
+        return if( path != null && path.extension() == ext ) path else null;
     }
 
     static function _searchHxmlFiles( paths : Array<String>, found : Array<String>, callback : Array<String>->Void ) {

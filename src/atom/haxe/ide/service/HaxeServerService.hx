@@ -8,6 +8,8 @@ typedef HaxeServerStatus = {
 }
 
 typedef HaxeServerService = {
+    //var getPath : Void->String;
+    //var getVersion : Void->String;
     var getStatus : Void->HaxeServerStatus;
     var start : Void->Void;
     var stop : Void->Void;
