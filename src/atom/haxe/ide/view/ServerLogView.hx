@@ -17,7 +17,7 @@ class ServerLogView {
     var element : DivElement;
     var messages : DivElement;
 
-    public function new() {
+    function new() {
 
         maxMessages = HaxeIDE.getConfigValue( 'serverlog_max_messages' );
 
@@ -138,13 +138,11 @@ class ServerLogView {
             messages.removeChild( messages.firstChild );
     }
 
-    /*
     public function serialize() {
         return {
             visible: panel.isVisible()
         }
     }
-    */
 
     public function destroy() {
         element.removeEventListener( 'click', handleClick );
@@ -166,5 +164,10 @@ class ServerLogView {
 
     function handleContextMenu(e) {
         hide();
+    }
+
+    public static function deserialze( data ) {
+        trace(data);
+        return null;
     }
 }

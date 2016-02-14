@@ -45,6 +45,9 @@ class StatusBarView {
 
         tooltips = new ObjectMap();
 
+        setServerStatus( off );
+        setBuildStatus( idle );
+
         //Atom.contextMenu.add({
     }
 
@@ -54,17 +57,15 @@ class StatusBarView {
         if( meta != null ) setMetaInfo( meta );
     }
 
-    public function setServerStatus( status : ServerStatus, exe : String, host : String, port : Int ) {
+    public function setServerStatus( status : ServerStatus, ?exe : String, ?host : String, ?port : Int ) {
         if( status != serverStatus ) {
             if( serverStatus != null ) icon.classList.remove( serverStatus );
             icon.classList.add( status );
-            addTooltip( icon, '$port:$status' );
-            /*
             if( status == off ) {
+                addTooltip( icon, '$status' );
             } else {
                 addTooltip( icon, '$port:$status' );
             }
-            */
         }
         serverStatus = status;
     }

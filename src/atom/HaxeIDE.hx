@@ -21,13 +21,16 @@ import atom.haxe.ide.view.OutlineView;
 import Atom.notifications;
 import om.Time;
 import thx.semver.Version;
+import atom.haxe.ide.ServerStatus;
 
+using Lambda;
 using StringTools;
 using haxe.io.Path;
 
 @:keep
 @:expose
 @:native('haxe')
+@:build(atom.haxe.ide.macro.BuildHaxeIDE.build())
 class HaxeIDE {
 
     static inline function __init__() untyped module.exports = atom.HaxeIDE;
@@ -89,52 +92,27 @@ class HaxeIDE {
         }
 
         /*
-        serverlog_max_messages:{
-        "title": 'Serverlog Max Messages',
-        "description": '',
-        "type": 'integer',
-        "minimum": 0,
-        "default": 1000
-        },
-        build_server_enabled: {
-            "title": "Enable/Disable haxe build server",
-            "description": "Enables/Disables to start an internal build server",
-            "type": "boolean",
-            "default": true
-        }
-
         build_selectors: {
             "title": 'Build file scopes',
             "description": 'When triggering a build command, only file scope in this list will trigger.',
             "type": 'string',
             "default": 'source.haxe, source.hxml'
         },
-
-        buildlog_ansi_colors: {
-            "title": "ANSI Colors",
-            "description": "Show line numbers in build log",
-            "type": "boolean",
-            "default": true
-        }
-
         autocomplete_enabled: {
             "title": "Autocomplete",
             "description": "Enables/Disables haxe autocompletion",
             "type": "boolean",
             "default": false
         }
-
         hxml_template: {
             title: '.hxml template file',
             description: '',
             type: 'string',
             default:'haxe-ide/template/new.hxml'
         },
-
         */
     };
 
-    //public static var haxeVersion(default,null) : Version;
     public static var state(default,null) : atom.haxe.ide.State;
     public static var server(default,null) : atom.haxe.ide.Server;
 
@@ -153,28 +131,30 @@ class HaxeIDE {
 
     static function activate( savedState : Dynamic ) {
 
-        trace( 'Atom-haxe-ide : '+savedState );
+        trace( 'Atom-haxe-ide $version '+savedState );
 
         state = new atom.haxe.ide.State( savedState.state );
 
         statusBar = new StatusBarView();
         buildLog = new BuildLogView();
-        serverLog = new ServerLogView();
+        //serverLog = new ServerLogView();
         //outline = new OutlineView();
 
+        Atom.deserializers.add( ServerLogView );
+
         if( savedState.serverLogVisible ) {
-            serverLog.show();
+            //serverLog.show();
         }
 
         server = new atom.haxe.ide.Server();
         server.onStart = function(){
 
+            console.info( 'Haxe server started '+server.status );
+            statusBar.setServerStatus( server.status, server.exe, server.host, server.port );
+
             if( commandServerStart != null ) commandServerStart.dispose();
             commandServerStop = Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(e) stopServer() );
             commandServerLogToggle = Atom.commands.add( 'atom-workspace', 'haxe:server-log-toggle', function(_) serverLog.toggle() );
-
-            console.info( 'Haxe server started '+server.status );
-            statusBar.setServerStatus( server.status, server.exe, server.host, server.port );
         }
         server.onStop = function( code : Int ){
 
@@ -215,19 +195,15 @@ class HaxeIDE {
         //subscriptions.add( Atom.commands.add( 'atom-workspace', 'haxe-ide:toggle-server-log', function(_) serverLog.toggle() ) );
         commandServerStart = Atom.commands.add( 'atom-workspace', 'haxe:server-start', function(_) startServer() );
         commandBuild = Atom.commands.add( 'atom-workspace', 'haxe:build', function(_) build() );
-        //commandServerStop = Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(_) stopServer() );
-        //commandServerLogToggle = Atom.commands.add( 'atom-workspace', 'haxe:server-log-toggle', function(_) serverLog.toggle() );
-        //commandBuild = Atom.commands.add( 'atom-workspace', 'haxe:build', function(_) build() );
 
         configChangeListener = Atom.config.onDidChange( 'haxe-ide', {}, function(e){
-
             //!TODO check which option has changed
             trace(e);
-
+            /*
             server.stop();
             server.start( e.newValue.haxe_path, e.newValue.server_port, e.newValue.server_host, function(){
-
             });
+            */
         });
 
         Atom.workspace.observeTextEditors(function(editor){
@@ -283,9 +259,38 @@ class HaxeIDE {
 
         Timer.delay( function(){
 
-            getHaxeVersion(function(v:Version){
-                console.info( 'haxe '+v );
+            /*
+            var minPort = getConfigValue( 'haxe_server_port' );
+            var maxServerInstances = 10;
+            var i = 0;
+            var haxeVersion : String = null;
+            while( i < maxServerInstances ) {
+                try {
+                    haxeVersion = om.HaxeProcess.getServerVersionSync( minPort + i );
+                } catch(e:Dynamic) {
+                    trace(e);
+                    break;
+                }
+                i++;
+            }
+            if( haxeVersion != null ) {
+                trace(haxeVersion);
+                //server.status = ServerStatus.idle;
+            } else {
+                var nPort = minPort + 1;
+                trace("TRY PORT: "+nPort );
                 startServer();
+            }
+            */
+
+            //TODO try to kill process ?
+
+            getHaxeVersion(function(e:String,v:Version){
+                if( e != null ) {
+                    startServer();
+                } else {
+                    console.info( 'haxe version $v' );
+                }
             });
 
         }, getConfigValue( 'server_startdelay' ) * 1000 );
@@ -314,7 +319,7 @@ class HaxeIDE {
         return {
             state: state.serialize(),
             //server: server.serialize()
-            serverLogVisible: serverLog.isVisible()
+            serverLog: serverLog.serialize()
         };
     }
 
@@ -322,15 +327,24 @@ class HaxeIDE {
         return Atom.config.get( 'haxe-ide.$key' );
     }
 
-    public static function getHaxeVersion( callback : Version->Void ) {
+    public static function searchHxmlFiles( callback : Array<String>->Void ) {
+        var paths = Atom.project.getPaths();
+        if( paths.length == 0 )  callback([]) else _searchHxmlFiles( paths, [], callback );
+    }
+
+    public static function getHaxeVersion( ?exePath : String, callback : String->Version->Void ) {
+        if( exePath == null ) exePath = getConfigValue( 'haxe_path' );
         var res : String = null;
-        var proc = spawn( getConfigValue( 'haxe_path' ), ['-version'] );
-        proc.stderr.on( 'data', function(e) {
-             res = e.toString();
+        var proc = spawn( exePath, ['-version'] );
+        proc.stderr.on( 'data', function(e) res = e.toString() );
+        proc.on( 'exit', function(code) {
+            switch code {
+            case 0:
+                if( res != null ) res = res.trim();
+                callback( null, res );
+            default: callback( res, null );
+            }
         });
-        proc.on( 'exit', function(code){
-            callback( res.trim() );
-        } );
     }
 
     public static function startServer() {
@@ -369,16 +383,6 @@ class HaxeIDE {
 
             statusBar.set( state.hxml, active );
 
-            var args = [ '--cwd', state.cwd ];
-            if( server.status != off ) {
-                //TODO why not write directly to stdin of server process ?
-                //server.stdin.write();
-                args.push( '--connect' );
-                args.push( Std.string( server.port ) );
-            }
-            //args.push('--times'); statusBar.setMetaInfo( line );//TODO
-            //trace(args);
-
             // HACK
             var tokens = Hxml.parseTokens( r );
             for( i in 0...tokens.length ) {
@@ -391,7 +395,23 @@ class HaxeIDE {
                     }
                 }
             }
-            args = args.concat( tokens );
+
+            var args = [ '--cwd', state.cwd ].concat( tokens );
+
+            if( server.status != off ) {
+                //TODO why not write directly to stdin of server process ?
+                //server.stdin.write();
+                if( args.has( '--connect' ) ) {
+                    notifications.addWarning( '"--connect" should not be set if building with atom' );
+                } else {
+                    args.push( '--connect' );
+                    args.push( Std.string( server.port ) );
+                }
+            }
+            //args.push('--times'); statusBar.setMetaInfo( line );//TODO
+            //trace(args);
+
+
 
             var build = new Build( Atom.config.get( 'haxe-ide.haxe_path' ) );
 
@@ -546,11 +566,6 @@ class HaxeIDE {
 
     static inline function getTreeViewFile() : String {
         return Atom.packages.getLoadedPackage( 'tree-view' ).serialize().selectedPath;
-    }
-
-    static function searchHxmlFiles( callback : Array<String>->Void ) {
-        var paths = Atom.project.getPaths();
-        (paths.length == 0) ? callback([]) : _searchHxmlFiles( paths, [], callback );
     }
 
     static function _searchHxmlFiles( paths : Array<String>, found : Array<String>, callback : Array<String>->Void ) {

@@ -16,13 +16,15 @@ class Server {
     public var host(default,null) : String;
     public var status(default,null) : ServerStatus;
 
-    var proc : Process;
+    var process : Process;
 
     public function new() {
         status = off;
     }
 
     public function start( exe : String, port : Int, host : String, verbose = true, callback : Void->Void ) {
+
+        //TODO try/test if already running
 
         this.exe = exe;
         this.port = port;
@@ -37,12 +39,12 @@ class Server {
 
         console.log( 'Starting haxe server: '+args.join(' ') );
 
-        proc = spawn( exe, args, {} );
-        proc.stdout.on( 'data', handleData );
-        proc.stderr.on( 'data', handleError );
-        proc.on( 'exit', handleExit );
-        proc.on( 'message', function(e) trace(e) );
-        proc.on( 'error', function(e) {
+        process = spawn( exe, args, {} );
+        process.stdout.on( 'data', handleData );
+        process.stderr.on( 'data', handleError );
+        process.on( 'exit', handleExit );
+        process.on( 'message', function(e) trace(e) );
+        process.on( 'error', function(e) {
             trace(e); //TODO
         });
 
@@ -55,8 +57,8 @@ class Server {
     public function stop() {
         if( status != off ) {
             status = off;
-            try proc.kill() catch(e:Dynamic) trace(e);
-            try proc = null catch(e:Dynamic) trace(e);
+            try process.kill() catch(e:Dynamic) trace(e);
+            try process = null catch(e:Dynamic) trace(e);
             //onStop(0);
         }
     }
@@ -66,12 +68,10 @@ class Server {
     }
 
     function handleError(e) {
-        trace(e.toString());
         onError( e.toString() );
     }
 
     function handleExit( code : Int ) {
-        trace(code);
         status = off;
         onStop( code );
     }
