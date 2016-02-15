@@ -13,19 +13,22 @@ using Lambda;
 class BuildHaxeIDE {
 
     static function build() : Array<Field> {
+
         var fields = Context.getBuildFields();
         var pos = Context.currentPos();
-        var pkg = Json.parse( File.getContent( Sys.getCwd()+'package.json' ) );
+        var project = Json.parse( File.getContent( Sys.getCwd()+'package.json' ) );
+
         fields.push({
             access: [APublic,AStatic,AInline],
             name: 'version',
-            kind: FVar( macro : String, macro $v{pkg.version} ),
+            kind: FVar( macro : String, macro $v{project.version} ),
             pos: pos,
             meta: [
                 { name:':keep', pos: pos },
                 { name:':expose', pos: pos }
             ]
         });
+
         return fields;
     }
 }

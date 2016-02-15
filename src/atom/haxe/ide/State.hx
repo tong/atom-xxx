@@ -20,6 +20,7 @@ class State {
     public var isDebug(get,null) : Bool;
 
     public function new( state : TState ) {
+        trace(state);
         if( state != null && state.cwd.exists() && state.hxml.exists() ) {
             set( state.cwd, state.hxml );
         }

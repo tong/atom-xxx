@@ -132,7 +132,7 @@ class StatusBarView {
     }
 
     function handleClickIcon(e) {
-        HaxeIDE.serverLog.toggle();
+        HaxeIDE.serverlog.toggle();
     }
 
     function handleClickText(e) {

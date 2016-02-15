@@ -116,9 +116,9 @@ class HaxeIDE {
     public static var state(default,null) : atom.haxe.ide.State;
     public static var server(default,null) : atom.haxe.ide.Server;
 
-    public static var serverLog(default,null) : ServerLogView;
-    public static var statusBar(default,null) : StatusBarView;
-    public static var buildLog(default,null) : BuildLogView;
+    public static var serverlog(default,null) : ServerLogView;
+    public static var statusbar(default,null) : StatusBarView;
+    public static var buildlog(default,null) : BuildLogView;
     //static var outline : OutlineView;
 
     //static var subscriptions : CompositeDisposable;
@@ -129,37 +129,46 @@ class HaxeIDE {
     static var commandBuild : Disposable;
     static var commandServerLogToggle : Disposable;
 
+    static var opener : Disposable;
+
     static function activate( savedState : Dynamic ) {
 
-        trace( 'Atom-haxe-ide $version '+savedState );
+        trace( 'Atom-haxe-ide $version ' );
+        trace( savedState );
+
+        trace(Atom.getLoadSettings());
+
+        //trace( Atom.deserializers.deserialize( savedState ) );
 
         state = new atom.haxe.ide.State( savedState.state );
 
-        statusBar = new StatusBarView();
-        buildLog = new BuildLogView();
-        serverLog = new ServerLogView();
+        statusbar = new StatusBarView();
+        buildlog = new BuildLogView();
+        serverlog = new ServerLogView();
         //outline = new OutlineView();
 
-        Atom.deserializers.add( ServerLogView );
+        //Atom.deserializers.add( ServerLogView );
 
-        if( savedState.serverLog.visible ) {
-            serverLog.show();
+        if( savedState != null ) {
+            if( savedState.serverLog != null && savedState.serverLog.visible ) {
+                serverlog.show();
+            }
         }
 
         server = new atom.haxe.ide.Server();
         server.onStart = function(){
 
             console.info( 'Haxe server started '+server.status );
-            statusBar.setServerStatus( server.status, server.exe, server.host, server.port );
+            statusbar.setServerStatus( server.status, server.exe, server.host, server.port );
 
             if( commandServerStart != null ) commandServerStart.dispose();
             commandServerStop = Atom.commands.add( 'atom-workspace', 'haxe:server-stop', function(e) stopServer() );
-            commandServerLogToggle = Atom.commands.add( 'atom-workspace', 'haxe:server-log-toggle', function(_) serverLog.toggle() );
+            commandServerLogToggle = Atom.commands.add( 'atom-workspace', 'haxe:server-log-toggle', function(_) serverlog.toggle() );
         }
         server.onStop = function( code : Int ){
 
             console.info( 'Haxe server stopped ($code) '+server.status );
-            statusBar.setServerStatus( server.status, server.exe, server.host, server.port );
+            statusbar.setServerStatus( server.status, server.exe, server.host, server.port );
 
             if( commandServerStop != null ) commandServerStop.dispose();
             if( commandServerLogToggle != null ) commandServerLogToggle.dispose();
@@ -167,19 +176,19 @@ class HaxeIDE {
         }
         server.onError = function(msg){
             console.warn( msg );
-            statusBar.setServerStatus( server.status, server.exe, server.host, server.port );
+            statusbar.setServerStatus( server.status, server.exe, server.host, server.port );
         }
         server.onMessage = function(msg){
-            var lines = serverLog.add( msg );
+            var lines = serverlog.add( msg );
             if( lines != null ) {
                 var i = 0;
                 for( line in lines ) {
                     if( line.startsWith( 'Time spent :' ) ) {
                         var info = line.substr(13);
                         if( lines[i-1] != null )  info += ', '+lines[i-1].substr(8);
-                        statusBar.setMetaInfo( info );
+                        statusbar.setMetaInfo( info );
                     } else {
-                        statusBar.setMetaInfo( line );
+                        statusbar.setMetaInfo( line );
                     }
                     i++;
                 }
@@ -204,14 +213,26 @@ class HaxeIDE {
                 }
         });
 
+        opener = Atom.workspace.addOpener( function(uri){
+            var ext = uri.extension();
+            switch ext {
+            case 'hx':
+                trace( Atom.workspace.getActiveTextEditor() );
+            case 'hxml':
+            }
+            return null;
+            //return uri.startsWith( Manager.PREFIX ) ? new Manager() : null;
+        });
+
+        /*
         Atom.workspace.observeTextEditors(function(editor){
-            /*
             var path = editor.getPath();
             var ext = path.extension();
             if( ext == null )
                 return;
             switch ext {
             case 'hx':
+                trace("HAXEFILE");
                 //TODO
                 /*
                 editor.onDidChange(function(){
@@ -244,10 +265,10 @@ class HaxeIDE {
                 /*
                 if( editor.getText().trim().length == 0 ) {
                 }
-                * /
             }
-            */
+            *
         });
+        */
 
         if( state.hxml == null ) {
             searchHxmlFiles( function(found){
@@ -296,6 +317,22 @@ class HaxeIDE {
         }, getConfigValue( 'server_startdelay' ) * 1000 );
 
         //trace( Atom.project.getPaths() );
+
+        /*
+        var editor = Atom.workspace.getActiveTextEditor();
+        var line = 319;
+        var column = 9;
+        //var range = new atom.Range( [3,0],[4,5] );
+        //var range = new atom.Range( [0,0], [5,5] );
+        //var range = new atom.Range( [line,column], [line,column+3] );
+        //var marker = editor.markBufferRange( range );
+        var marker = editor.markBufferPosition( [line,column] );
+        //var marker = editor.markBufferRange( range, { invalidate:'overlap' } );
+        var params : Dynamic = {  type:'line' };
+        Reflect.setField( params, 'class', 'line-haxe-error' );
+        var decoration = editor.decorateMarker( marker, params );
+        trace(decoration);
+        */
     }
 
     static function deactivate() {
@@ -310,16 +347,18 @@ class HaxeIDE {
 
         configChangeListener.dispose();
 
-        statusBar.destroy();
-        buildLog.destroy();
-        serverLog.destroy();
+        statusbar.destroy();
+        buildlog.destroy();
+        serverlog.destroy();
+
+        opener.dispose();
     }
 
     static function serialize() {
         return {
             state: state.serialize(),
             //server: server.serialize()
-            serverLog: serverLog.serialize()
+            serverlog: serverlog.serialize()
         };
     }
 
@@ -367,7 +406,7 @@ class HaxeIDE {
 
         //TODO test if (re)build is required
 
-        buildLog.clear();
+        buildlog.clear();
 
         var treeViewFile = getTreeViewFile( 'hxml' );
         if( treeViewFile != null ) {
@@ -384,7 +423,7 @@ class HaxeIDE {
                 return;
             }
 
-            statusBar.set( state.hxml, active );
+            statusbar.set( state.hxml, active );
 
             // HACK
             var tokens = Hxml.parseTokens( r );
@@ -417,13 +456,13 @@ class HaxeIDE {
             var build = new Build( getConfigValue( 'haxe_path' ) );
 
             build.onMessage = function(msg){
-                buildLog.message( msg );
-                buildLog.show();
+                buildlog.message( msg );
+                buildlog.show();
             }
 
             build.onError = function(msg){
 
-                statusBar.setBuildStatus( error );
+                statusbar.setBuildStatus( error );
 
                 if( msg != null ) {
 
@@ -435,13 +474,13 @@ class HaxeIDE {
                         if( err != null ) {
                             haxeErrors.push( err );
                         } else {
-                            buildLog.message( line, 'error' );
+                            buildlog.message( line, 'error' );
                         }
                     }
                     if( haxeErrors.length > 0 ) {
 
                         for( e in haxeErrors )
-                            buildLog.error( e );
+                            buildlog.error( e );
 
                         var err = haxeErrors[0];
 
@@ -459,47 +498,30 @@ class HaxeIDE {
                                 else if( err.characters != null ) err.characters.start;
                                 else err.character;
 
+                            trace(line+":"+column);
+
                             Atom.workspace.open( filePath, {
                                 initialLine: line,
                                 initialColumn: column,
                                 activatePane: true,
                                 searchAllPanes : true
                             }).then( function(editor:TextEditor){
-
                                 editor.scrollToCursorPosition();
-                                //editor.selectWordsContainingCursors();
-                                //editor.selectToEndOfWord();
-                                //editor.setSelectedScreenRange( [line,column] );
-
-                                //TODO texteditor error decoration
-
-                                //Atom.views.getView(Atom.workspace).focus();
-
-                                //var range = editor.getSelectedBufferRange();
-                                //var range = new atom.Range( [3,0],[4,5] );
-                                //var range = new atom.Range( [0,0], [5,5] );
-                                //trace(editor);
-                                //var marker = editor.markBufferRange( range );
-
-                                //var marker = editor.markBufferRange( range, { invalidate:'overlap' } );
-                                //var params : Dynamic = {  type:'line' };
-                                //Reflect.setField( params, 'class', 'haxe-error-decoration' );
-                                // Why does the class fucking not apply ?????
-                                //var decoration = editor.decorateMarker( marker, params );
+                                //TODO decorate error position
                             });
                         }
                     }
 
-                    buildLog.show();
+                    buildlog.show();
                 }
             }
 
             build.onSuccess = function() {
-                statusBar.setBuildStatus( success );
+                statusbar.setBuildStatus( success );
             }
 
             if( getConfigValue( 'buildlog_print_command' ) ) {
-                buildLog.meta( args.join( ' ' ) );
+                buildlog.meta( args.join( ' ' ) );
             }
 
             build.start( args );
@@ -509,7 +531,7 @@ class HaxeIDE {
     ////////////////////////////////////////////////////////////////////////////
 
     static function consumeStatusBar( bar ) {
-        bar.addLeftTile( { item: statusBar.element, priority:-10 } );
+        bar.addLeftTile( { item: statusbar.element, priority:-10 } );
     }
 
     ////////////////////////////////////////////////////////////////////////////

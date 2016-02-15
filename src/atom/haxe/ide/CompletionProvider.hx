@@ -13,41 +13,10 @@ import atom.TextEditor;
 import atom.autocomplete.Request;
 import atom.autocomplete.Suggestion;
 import atom.autocomplete.SuggestionInsert;
+import haxe.SourceCodeUtil;
 
 using haxe.io.Path;
 using StringTools;
-
-/*
-private typedef Request = {
-    var editor : TextEditor;
-    var bufferPosition : Point;
-    var scopeDescriptor : String;
-    var prefix : String;
-    var activatedManually : Bool;
-}
-
-private typedef Suggestion = {
-    var text : String; // OR
-    var snippet : String;
-    @:optional var displayText : String;
-    @:optional var replacementPrefix : String;
-    @:optional var type : String;
-    @:optional var leftLabel : String;
-    @:optional var leftLabelHTML : String;
-    @:optional var rightLabel : String;
-    @:optional var rightLabelHTML : String;
-    @:optional var className : String;
-    @:optional var iconHTML : String;
-    @:optional var description : String;
-    @:optional var descriptionMoreURL : String;
-};
-
-private typedef SuggestionInsert = {
-    var editor : TextEditor;
-    var triggerPosition : Point;
-    var suggestion : Suggestion;
-}
-*/
 
 private typedef TempFileSaveInfo = {
     var fp : String;
@@ -58,13 +27,6 @@ private typedef TempFileSaveInfo = {
 class CompletionProvider {
 
     //public static inline var TMP = '.tmp';
-
-    static var REGEX_ENDS_WITH_DOT_IDENTIFIER = ~/\.([a-zA-Z_0-9]*)$/;
-    //static var REGEX_ENDS_WITH_DOT_NUMBER = ~/[^a-zA-Z0-9_\]\)]([\.0-9]+)$/;
-    //static var REGEX_ENDS_WITH_DOT_NUMBER = ~/^.*\.[0-9]*$/;
-    //static var REGEX_ENDS_WITH_PARTIAL_PACKAGE_DECL = ~/[^a-zA-Z0-9_]package\s+([a-zA-Z_0-9]+(\.[a-zA-Z_0-9]+)*)\.([a-zA-Z_0-9]*)$/;
-    //static var REGEX_BEGINS_WITH_KEY = ~/^([a-zA-Z0-9_]+)\s*:/;
-    static var REGEX_ENDS_WITH_ALPHANUMERIC = ~/([A-Za-z0-9_]+)$/;
 
     @:keep @:expose public var selector(default,null) = '.source.haxe';
     @:keep @:expose public var disableForSelector(default,null) = '.source.haxe .comment';
@@ -78,16 +40,22 @@ class CompletionProvider {
     @:expose
     public function getSuggestions( req : Request ) {
 
+        var state = HaxeIDE.state;
+
+        if( state.hxml == null ) {
+            return null;
+        }
+
         return new Promise( function(resolve,reject) {
 
+            /*
             var state = HaxeIDE.state;
-
             if( state.hxml == null ) {
                 reject( 'no hxml file specified' );
                 return;
             }
+            */
 
-            //var hxmlFile = AtomPackage.hxmlFile.withoutDirectory();
             //trace(req.prefix);
             //var activatedManually = req.activatedManually;
             var editor = req.editor;
@@ -113,6 +81,9 @@ class CompletionProvider {
                 return resolve([]);
             if( posInfo.mode != null ) mode = posInfo.mode;
 
+            trace(posInfo);
+
+            /*
             var mode_saveForCompletion = true;
 
             if( mode_saveForCompletion ) {
@@ -134,6 +105,7 @@ class CompletionProvider {
             } else {
                 //TODO
             }
+            */
 
             //Sys.command( 'haxe', ['-cp',AtomPackage.path+'/src','--macro','atom.haxe.ide.HaxeCode.extractPackage()'] );
 
@@ -221,10 +193,11 @@ class CompletionProvider {
         var line = editor.getTextInBufferRange( [[pos[0],0], pos] );
 
         //TODO check for comments and strings
+        //TODO use haxeparser for this ?
 
-        if( REGEX_ENDS_WITH_DOT_IDENTIFIER.match( line ) ) {
-            trace("DOT PREFIX");
-            var prefix = REGEX_ENDS_WITH_DOT_IDENTIFIER.matched(1);
+        if( SourceCodeUtil.ENDS_WITH_DOT_IDENTIFIER.match( line ) ) {
+            var prefix = SourceCodeUtil.ENDS_WITH_DOT_IDENTIFIER.matched(1);
+            trace( "DOT PREFIX #"+prefix+'#' );
             /*
             // Don't query when writing a number containing dots
             if( REGEX_ENDS_WITH_DOT_NUMBER.match( ' '+line ) ) {
@@ -243,8 +216,8 @@ class CompletionProvider {
             };
         }
 
-        if( REGEX_ENDS_WITH_ALPHANUMERIC.match( line ) ) {
-            var prefix = REGEX_ENDS_WITH_ALPHANUMERIC.matched(1);
+        if( SourceCodeUtil.ENDS_WITH_ALPHANUMERIC.match( line ) ) {
+            var prefix = SourceCodeUtil.ENDS_WITH_ALPHANUMERIC.matched(1);
             return {
                 index: index - prefix.length,
                 prefix: prefix,

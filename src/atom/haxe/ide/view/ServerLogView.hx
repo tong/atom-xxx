@@ -9,6 +9,7 @@ import Atom.workspace;
 
 using StringTools;
 
+@:keep
 class ServerLogView {
 
     public var maxMessages(default,null) : Int;
@@ -17,7 +18,7 @@ class ServerLogView {
     var element : DivElement;
     var messages : DivElement;
 
-    public function new() {
+    public function new( ?visible : Dynamic ) {
 
         maxMessages = HaxeIDE.getConfigValue( 'serverlog_max_messages' );
 
@@ -32,6 +33,17 @@ class ServerLogView {
 
         element.addEventListener( 'click', handleClick, false  );
         element.addEventListener( 'contextmenu', handleContextMenu, false  );
+
+        Atom.deserializers.add( this );
+    }
+
+    @:keep
+    @:expose
+    public function serialize() {
+        return {
+            deserializer: 'atom.haxe.ide.view.ServerLogView',
+            visible: isVisible()
+        };
     }
 
     public inline function isVisible() : Bool {
@@ -138,12 +150,6 @@ class ServerLogView {
             messages.removeChild( messages.firstChild );
     }
 
-    public function serialize() {
-        return {
-            visible: panel.isVisible()
-        }
-    }
-
     public function destroy() {
         element.removeEventListener( 'click', handleClick );
         element.removeEventListener( 'contextmenu', handleContextMenu );
@@ -166,8 +172,11 @@ class ServerLogView {
         hide();
     }
 
-    public static function deserialze( data ) {
+    @:keep
+    @:expose
+    public static function deserialze( data, env ) {
         trace(data);
+        trace(env);
         return null;
     }
 }
