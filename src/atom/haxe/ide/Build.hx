@@ -21,7 +21,7 @@ class Build {
     }
 
     public function start( args : Array<String> ) {
-        trace( args );
+        trace( 'haxe '+args.join(' ') );
         proc = spawn( haxePath, args );
         proc.stdout.on( 'data', handleData );
         proc.stderr.on( 'data', handleError );
