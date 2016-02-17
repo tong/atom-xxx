@@ -136,7 +136,7 @@ class HaxeIDE {
         trace( 'Atom-haxe-ide $version ' );
         trace( savedState );
 
-        trace(Atom.getLoadSettings());
+        //trace(Atom.getLoadSettings());
 
         //trace( Atom.deserializers.deserialize( savedState ) );
 
@@ -204,7 +204,7 @@ class HaxeIDE {
 
         configChangeListener = Atom.config.onDidChange( 'haxe-ide', {}, function(e){
             var nv = e.newValue;
-            var ov = e.newValue;
+            var ov = e.oldValue;
             if( nv.haxe_path != ov.haxe_path ||
                 nv.haxe_server_port != ov.haxe_server_port ||
                 nv.haxe_server_host != ov.haxe_server_host ) {
@@ -346,12 +346,11 @@ class HaxeIDE {
         server.stop();
 
         configChangeListener.dispose();
+        opener.dispose();
 
         statusbar.destroy();
         buildlog.destroy();
         serverlog.destroy();
-
-        opener.dispose();
     }
 
     static function serialize() {
@@ -446,8 +445,7 @@ class HaxeIDE {
                 if( args.has( '--connect' ) ) {
                     notifications.addWarning( '"--connect" should not be set if building with atom' );
                 } else {
-                    args.push( '--connect' );
-                    args.push( Std.string( server.port ) );
+                    args = ['--connect', Std.string( server.port )].concat( args );
                 }
             }
             //args.push('--times'); statusBar.setMetaInfo( line );//TODO
