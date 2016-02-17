@@ -454,7 +454,10 @@ class HaxeIDE {
             var build = new Build( getConfigValue( 'haxe_path' ) );
 
             build.onMessage = function(msg){
-                buildlog.message( msg );
+                for( line in msg.split('\n') ) {
+                    buildlog.message( line );
+                }
+                //buildlog.message( msg );
                 buildlog.show();
             }
 
