@@ -68,6 +68,17 @@ class ServerLogView {
         //if( !panel.isVisible() )
         //    return [];
 
+        //TODO completion fucks it up
+        return [];
+
+        //trace(text);
+
+        if( text.startsWith( 'Completion Response =' ) ) {
+            text = text.substr( 19 );
+            console.debug(text);
+            return [];
+        }
+
         var lines = new Array<String>();
 
         for( line in text.split( '\n' ) ) {
@@ -92,6 +103,7 @@ class ServerLogView {
             e.classList.add( 'message', firstWord );
             messages.appendChild( e );
 
+            trace(firstWord);
 
             switch firstWord {
             case 'parsed':

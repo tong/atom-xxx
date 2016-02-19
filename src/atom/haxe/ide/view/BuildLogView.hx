@@ -226,9 +226,15 @@ private class LogMessageView extends MessageView {
         //var content = document.createDivElement();
         //content.classList.add( 'content' );
 
-        //trace(text);
-        var html = MessageView.ansiToHTML( text );
+        trace(text);
+        /*
+        var html = '';
+        for( line in text.split('\n') ) {
+            html += MessageView.ansiToHTML( line );
+        }
         //trace(html);
+        */
+        var html = MessageView.ansiToHTML( text );
         content.innerHTML = html;
 
         //element.appendChild( content );

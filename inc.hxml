@@ -2,8 +2,10 @@
 -lib hxatom
 -lib haxeparser
 -lib thx.semver
+-lib markdown
 -cp src
 -cp ../../lib/om.core/src
 -cp ../../lib/om.haxeutils/src
 -cp ../../lib/om.term/src
+-cp ../../lib/om.io/src
 atom.HaxeIDE

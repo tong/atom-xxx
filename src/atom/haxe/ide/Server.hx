@@ -16,10 +16,22 @@ class Server {
     public var host(default,null) : String;
     public var status(default,null) : ServerStatus;
 
-    var process : Process;
+    public var process(default,null) : Process;
 
     public function new() {
         status = off;
+    }
+
+    public inline function isRunning() : Bool {
+        return status != off;
+    }
+
+    public function getHaxeFlag() : Array<String> {
+        if( !isRunning() )
+            return [];
+        var str = Std.string( HaxeIDE.server.port );
+        if( host != null ) str = host + ':' + str;
+        return ['--connect',str];
     }
 
     public function start( exe : String, port : Int, host : String, verbose = true, callback : Void->Void ) {

@@ -16,7 +16,7 @@ class State {
 
     public var cwd(default,null) : String;
     public var hxml(default,null) : String;
-    public var tokens(default,null) : Array<String>;
+    public var args(default,null) : Array<String>;
     public var isDebug(get,null) : Bool;
 
     public function new( state : TState ) {
@@ -33,7 +33,7 @@ class State {
         this.cwd = cwd;
         this.hxml = hxml;
 
-        tokens = Hxml.parseTokens( File.getContent( hxml ) );
+        args = Hxml.parseTokens( File.getContent( hxml ) );
         //isDebug = hasToken( '-debug' );
     }
 
@@ -42,11 +42,11 @@ class State {
     }
 
     public inline function hasToken( token : String ) : Bool {
-        return Lambda.has( tokens, token );
+        return Lambda.has( args, token );
     }
 
     public inline function getDefine( token : String ) : Bool {
-        return Lambda.has( tokens, token );
+        return Lambda.has( args, token );
     }
 
     public function serialize() {

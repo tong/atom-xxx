@@ -113,6 +113,7 @@ class HaxeIDE {
         */
     };
 
+    public static var packagePath(default,null) : String;
     public static var state(default,null) : atom.haxe.ide.State;
     public static var server(default,null) : atom.haxe.ide.Server;
 
@@ -131,10 +132,14 @@ class HaxeIDE {
 
     static var opener : Disposable;
 
+    static var completion : atom.haxe.ide.CompletionProvider;
+
     static function activate( savedState : Dynamic ) {
 
         trace( 'Atom-haxe-ide $version ' );
-        trace( savedState );
+        //trace( savedState );
+
+        packagePath = Atom.packages.resolvePackagePath( 'haxe-ide' );
 
         //trace(Atom.getLoadSettings());
 
@@ -147,6 +152,7 @@ class HaxeIDE {
         serverlog = new ServerLogView();
         //outline = new OutlineView();
 
+        //var buildlog2 = new atom.haxe.ide.view.BuildLogView2();
         //Atom.deserializers.add( ServerLogView );
 
         if( savedState != null ) {
@@ -312,7 +318,9 @@ class HaxeIDE {
                 }
             });
             */
-            startServer();
+
+
+//            startServer();
 
         }, getConfigValue( 'server_startdelay' ) * 1000 );
 
@@ -333,6 +341,8 @@ class HaxeIDE {
         var decoration = editor.decorateMarker( marker, params );
         trace(decoration);
         */
+
+        completion = new atom.haxe.ide.CompletionProvider( packagePath+'/cache' );
     }
 
     static function deactivate() {
@@ -351,6 +361,8 @@ class HaxeIDE {
         statusbar.destroy();
         buildlog.destroy();
         serverlog.destroy();
+
+        completion.dispose();
     }
 
     static function serialize() {
@@ -454,10 +466,7 @@ class HaxeIDE {
             var build = new Build( getConfigValue( 'haxe_path' ) );
 
             build.onMessage = function(msg){
-                for( line in msg.split('\n') ) {
-                    buildlog.message( line );
-                }
-                //buildlog.message( msg );
+                buildlog.message( msg );
                 buildlog.show();
             }
 
@@ -583,7 +592,8 @@ class HaxeIDE {
     }
 
     static function provideAutoCompletion() {
-        return getConfigValue( 'autocomplete_enabled' ) ? new atom.haxe.ide.CompletionProvider() : null;
+        //return getConfigValue( 'autocomplete_enabled' ) ? new atom.haxe.ide.CompletionProvider() : null;
+        return completion; //new atom.haxe.ide.CompletionProvider();
     }
 
     ////////////////////////////////////////////////////////////////////////////
