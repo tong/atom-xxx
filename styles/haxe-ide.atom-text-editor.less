@@ -1,0 +1,20 @@
+
+@import "haxe-ide-vars";
+//@import "syntax-variables";
+
+.line-haxe-error {
+    //background: @background-color-error;
+}
+
+atom-text-editor[data-grammar="source haxe"] {
+    atom-overlay.autocomplete-plus {
+        autocomplete-suggestion-list.autocomplete-suggestion-list {
+            .left-label {
+                max-width: none;
+            }
+            .right-label {
+                max-width: none;
+            }
+        }
+    }
+}
