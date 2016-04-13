@@ -7,25 +7,26 @@ import js.node.child_process.ChildProcess as Process;
 class Server {
 
     public dynamic function onStart() {}
+    public dynamic function onData( str : String) {}
+    public dynamic function onError( str : String ) {}
     public dynamic function onStop( code : Int ) {}
-    public dynamic function onError( msg : String) {}
-    public dynamic function onMessage( msg : String ) {}
 
     public var exe(default,null) : String;
     public var port(default,null) : Int;
     public var host(default,null) : String;
-    public var status(default,null) : ServerStatus;
+    public var active(default,null) : Bool;
+    //public var status(default,null) : ServerStatus;
 
-    public var process(default,null) : Process;
+    var process : Process;
 
-    public function new() {
-        status = off;
+    public function new( exe = 'haxe', port : Int, host = '127.0.0.1' ) {
+        this.exe = exe;
+        this.port = port;
+        this.host = host;
+        active = false;
     }
 
-    public inline function isRunning() : Bool {
-        return status != off;
-    }
-
+    /*
     public function getHaxeFlag() : Array<String> {
         if( !isRunning() )
             return [];
@@ -33,23 +34,17 @@ class Server {
         if( host != null ) str = host + ':' + str;
         return ['--connect',str];
     }
+    */
 
-    public function start( exe : String, port : Int, host : String, verbose = true, callback : Void->Void ) {
+    public function start( verbose = true, callback : Void->Void ) {
 
-        //TODO try/test if already running
+        if( active )
+            throw 'already active';
 
-        this.exe = exe;
-        this.port = port;
-        this.host = host;
-
-        status = off;
-
-        var args = new Array<String>();
+        var args = ['--wait','$host:$port'];
         if( verbose ) args.push( '-v' );
-        args.push( '--wait' );
-        args.push( '$host:$port' );
 
-        console.log( 'Starting haxe server: '+args.join(' ') );
+        trace( 'Starting haxe server: '+args.join(' ') );
 
         process = spawn( exe, args, {} );
         process.stdout.on( 'data', handleData );
@@ -67,19 +62,27 @@ class Server {
     }
 
     public function stop() {
-        if( status != off ) {
-            status = off;
-            try process.kill() catch(e:Dynamic) trace(e);
-            try process = null catch(e:Dynamic) trace(e);
+        if( active ) {
+            active = false;
+            process.stdin.end();
+            process.stdout.end();
+            //try process.kill() catch(e:Dynamic) trace(e);
+            //try process = null catch(e:Dynamic) trace(e);
             //onStop(0);
         }
     }
 
+    public function dispose() {
+        stop();
+    }
+
     function handleData(e) {
+        trace(e);
         onMessage( e.toString() );
     }
 
     function handleError(e) {
+        trace(e);
         onError( e.toString() );
     }
 

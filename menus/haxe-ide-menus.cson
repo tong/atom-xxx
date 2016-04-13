@@ -2,7 +2,7 @@
     {
         'label': 'Packages'
         'submenu': [
-            'label': 'Haxe IDE'
+            'label': 'HaxeIDE'
             'submenu': [
                 { 'label': 'Start Server', 'command': 'haxe:server-start' },
                 { 'label': 'Stop Server', 'command': 'haxe:server-stop' },

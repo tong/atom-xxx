@@ -69,7 +69,7 @@ class ServerLogView {
         //    return [];
 
         //TODO completion fucks it up
-        return [];
+        //return [];
 
         //trace(text);
 

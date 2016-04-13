@@ -4,8 +4,8 @@ import js.Browser.console;
 import js.node.Fs;
 import js.node.ChildProcess.spawn;
 import haxe.Timer;
-import haxe.Hxml;
-import haxe.compiler.ErrorMessage;
+import om.haxe.Hxml;
+import om.haxe.ErrorMessage;
 import atom.Disposable;
 import atom.TextEditor;
 import atom.CompositeDisposable;
@@ -43,7 +43,6 @@ class HaxeIDE {
             "type": "string",
             "default": "haxe"
         },
-
         haxe_server_port: {
             "title": "Haxe Server Port",
             "description": "The port number the haxe server will listen.",
@@ -150,6 +149,7 @@ class HaxeIDE {
         statusbar = new StatusBarView();
         buildlog = new BuildLogView();
         serverlog = new ServerLogView();
+        //serverlog.show();
         //outline = new OutlineView();
 
         //var buildlog2 = new atom.haxe.ide.view.BuildLogView2();
@@ -185,6 +185,7 @@ class HaxeIDE {
             statusbar.setServerStatus( server.status, server.exe, server.host, server.port );
         }
         server.onMessage = function(msg){
+            trace(msg);
             var lines = serverlog.add( msg );
             if( lines != null ) {
                 var i = 0;
@@ -320,7 +321,7 @@ class HaxeIDE {
             */
 
 
-//            startServer();
+            startServer();
 
         }, getConfigValue( 'server_startdelay' ) * 1000 );
 
@@ -593,7 +594,7 @@ class HaxeIDE {
 
     static function provideAutoCompletion() {
         //return getConfigValue( 'autocomplete_enabled' ) ? new atom.haxe.ide.CompletionProvider() : null;
-        return completion; //new atom.haxe.ide.CompletionProvider();
+        return null; //completion; //new atom.haxe.ide.CompletionProvider();
     }
 
     ////////////////////////////////////////////////////////////////////////////

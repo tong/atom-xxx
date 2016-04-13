@@ -18,7 +18,7 @@ import atom.autocomplete.Suggestion;
 import atom.autocomplete.SuggestionInsert;
 import sys.FileSystem;
 import om.io.FileUtil;
-import haxe.SourceCodeUtil;
+import om.haxe.SourceCodeUtil;
 
 using haxe.io.Path;
 using StringTools;
@@ -94,7 +94,7 @@ class CompletionProvider {
                 return resolve([]);
             if( posInfo.mode != null ) mode = posInfo.mode;
 
-            trace(posInfo);
+            //trace(posInfo);
             //trace(mode);
 
             var saveInfo = saveTempCompletionFile( path, content );
@@ -106,11 +106,11 @@ class CompletionProvider {
 
             Completion.fieldAccess( state.cwd, saveInfo.fp, posInfo.index, extraArgs, function(result) {
                 if( result == null || result.length == 0 ) {
-                    resolve( [] );
+                    resolve( null );
                 } else {
                     var xml = try new js.html.DOMParser().parseFromString( result, TEXT_XML ) catch(e:Dynamic) {
                         console.error(e);
-                        resolve( [] );
+                        resolve( null );
                         return;
                     }
                     resolve( createFieldSuggestions( xml.firstElementChild ) );

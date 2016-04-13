@@ -1,4 +1,4 @@
-inc.hxml
+build.hxml
 -lib closure
 --no-traces
 -dce full

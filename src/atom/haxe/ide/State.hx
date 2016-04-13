@@ -1,7 +1,7 @@
 package atom.haxe.ide;
 
 import sys.io.File;
-import haxe.Hxml;
+import om.haxe.Hxml;
 
 using haxe.io.Path;
 using sys.FileSystem;
