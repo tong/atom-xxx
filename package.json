@@ -1,43 +1,39 @@
 {
-    "name": "haxe-ide",
-    "main": "./lib/haxe-ide",
-    "version": "0.3.4",
-    "description": "Haxe Development Environment",
+    "name": "xxx",
+    "version": "0.4.0",
+    "description": "Sex with haxe",
     "keywords": ["haxe","ide"],
-    "consumedServices": {
-        "status-bar": { "versions": { "^1.0.0": "consumeStatusBar" } }
-    },
-    "providedServices": {
-        "haxe-server": {
-            "description": "Provides haxe build/completion server",
-            "versions": {
-                "0.1.0": "provideServerService"
-            }
-        },
-        "haxe-build": {
-            "description": "Provides haxe build service",
-            "versions": {
-                "0.1.0": "provideBuildService"
-            }
-        },
-        "haxe-completion": {
-            "description": "Provides haxe completion service",
-            "versions": {
-                "0.1.0": "provideCompletionService"
-            }
-        },
-        "autocomplete.provider": {
-            "versions": {
-                "2.0.0": "provideAutoCompletion"
-            }
-        }
-    },
-    "repository": "https://github.com/tong/atom-haxe-ide",
     "license": "GPL",
+    "repository": "https://github.com/tong/atom-xxx",
     "engines": {
-        "atom": ">=1.5.0 <2.0.0"
+        "atom": ">=1.6.2 <2.0.0"
     },
     "dependencies": {
-        "language-haxe": "^0.4.0"
+        "language-haxe": "^0.4.3"
+    },
+    "main": "./lib/xxx",
+    "configSchema": {
+        "haxe_path": {
+            "title": "Haxe Path",
+            "description": "Path to your haxe executable",
+            "type": "string",
+            "default": "haxe"
+        },
+        "haxe_server_port": {
+            "title": "Haxe Server Port",
+            "description": "The port number the haxe server will listen on.",
+            "type": "integer",
+            "default": 5500
+        },
+        "haxe_server_startdelay":{
+            "title": "Haxe Server Activation Delay",
+            "description": "The delay in seconds before starting the haxe server.",
+            "type": "integer",
+            "minimum": 0,
+            "default": 1
+        }
+    },
+    "consumedServices": {
+        "status-bar": { "versions": { "^1.0.0": "consumeStatusBar" } }
     }
 }

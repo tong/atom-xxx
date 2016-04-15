@@ -1,4 +1,4 @@
-package atom.haxe.ide.view;
+package xxx.atom.view;
 
 import js.Browser.console;
 import js.Browser.document;
@@ -14,16 +14,17 @@ class ServerLogView {
 
     public var maxMessages(default,null) : Int;
 
-    var panel : atom.Panel;
     var element : DivElement;
     var messages : DivElement;
+	var panel : atom.Panel;
 
-    public function new( ?visible : Dynamic ) {
+    @:allow(xxx.atom.IDE) function new( ?visible : Dynamic ) {
 
-        maxMessages = HaxeIDE.getConfigValue( 'serverlog_max_messages' );
+        //maxMessages = IDE.getConfigValue( 'serverlog_max_messages' );
+        maxMessages = 2000; //IDE.getConfigValue( 'serverlog_max_messages' );
 
         element = document.createDivElement();
-        element.classList.add( 'server-log', 'resizer' );
+        element.classList.add( 'haxe-serverlog', 'resizer' );
 
         messages = document.createDivElement();
         messages.classList.add( 'messages', 'scroller' );
@@ -32,18 +33,7 @@ class ServerLogView {
         panel = Atom.workspace.addRightPanel( { item: element, visible: false } );
 
         element.addEventListener( 'click', handleClick, false  );
-        element.addEventListener( 'contextmenu', handleContextMenu, false  );
-
-        Atom.deserializers.add( this );
-    }
-
-    @:keep
-    @:expose
-    public function serialize() {
-        return {
-            deserializer: 'atom.haxe.ide.view.ServerLogView',
-            visible: isVisible()
-        };
+        //element.addEventListener( 'contextmenu', handleContextMenu, false  );
     }
 
     public inline function isVisible() : Bool {
@@ -157,6 +147,10 @@ class ServerLogView {
         return lines;
     }
 
+	public inline function scrollToBottom() {
+		element.scrollTop = messages.scrollHeight;
+	}
+
     public function clear() {
         while( messages.firstChild != null )
             messages.removeChild( messages.firstChild );
@@ -164,13 +158,10 @@ class ServerLogView {
 
     public function destroy() {
         element.removeEventListener( 'click', handleClick );
-        element.removeEventListener( 'contextmenu', handleContextMenu );
+        //element.removeEventListener( 'contextmenu', handleContextMenu );
         panel.destroy();
     }
 
-    public inline function scrollToBottom() {
-        element.scrollTop = messages.scrollHeight;
-    }
 
     function handleClick(e) {
         if( e.ctrlKey ) {
@@ -180,15 +171,9 @@ class ServerLogView {
         }
     }
 
+	/*
     function handleContextMenu(e) {
         hide();
     }
-
-    @:keep
-    @:expose
-    public static function deserialze( data, env ) {
-        trace(data);
-        trace(env);
-        return null;
-    }
+	*/
 }

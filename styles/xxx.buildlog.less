@@ -1,0 +1,39 @@
+
+@import "xxx";
+
+.haxe-buildlog {
+
+    padding: 0;
+	overflow-y: auto;
+
+    font-family: @font-family-mono;
+
+    ol.messages {
+
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+
+        li.message {
+
+            time {
+                display: inline-block;
+                color: @text-color-subtle;
+            }
+
+            .content {
+                display: inline-block;
+            }
+        }
+        li.message:not(:last-child) {
+            border-bottom: 1px dotted @pane-item-border-color;
+        }
+        li.message:last-child {
+            border-bottom: 1px solid @pane-item-border-color;
+        }
+
+        li.message.error {
+            color: @text-color-error;
+        }
+    }
+}

@@ -1,0 +1,29 @@
+
+@import "ui-variables";
+
+@font-family-mono: 'Anonymous Pro', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+
+@color-haxe-1: #F68712;
+@color-haxe-2: #F47216;
+@color-haxe-3: #F1471D;
+@color-haxe-4: #FFF200;
+
+@font-face {
+	font-family: HaxeIDEFont;
+	font-weight: normal;
+	font-style: normal;
+	src: url('atom://xxx/res/haxe-ide-font.ttf') format('truetype');
+}
+
+.haxe-icon {
+	display: inline-block;
+	font-family: HaxeIDEFont;
+	font-weight: normal;
+	font-style: normal;
+	-webkit-font-smoothing: antialiased;
+	width: 1em;
+	line-height: 1em;
+}
+.haxe-icon:before {
+	content: '\e805';
+}

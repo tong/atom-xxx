@@ -1,5 +1,5 @@
 build.hxml
 -lib closure
---no-traces
 -dce full
+--no-traces
 -D closure_overwrite
