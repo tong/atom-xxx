@@ -1,10 +1,10 @@
 {
     "name": "xxx",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "description": "Sex with haxe",
     "keywords": ["haxe","ide"],
-    "license": "GPL",
     "repository": "https://github.com/tong/atom-xxx",
+    "license": "GPL",
     "engines": {
         "atom": ">=1.6.2 <2.0.0"
     },

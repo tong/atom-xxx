@@ -14,9 +14,9 @@ class ServerLogView {
 
     public var maxMessages(default,null) : Int;
 
+    var panel : atom.Panel;
     var element : DivElement;
     var messages : DivElement;
-	var panel : atom.Panel;
 
     @:allow(xxx.atom.IDE) function new( ?visible : Dynamic ) {
 

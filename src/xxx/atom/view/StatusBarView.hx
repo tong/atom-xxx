@@ -7,7 +7,6 @@ import js.html.DivElement;
 import js.html.SpanElement;
 import Atom.contextMenu;
 import Atom.workspace;
-import xxx.atom.IDE.project;
 
 using haxe.io.Path;
 
@@ -23,8 +22,6 @@ class StatusBarView {
     public function new() {
 
         element = document.createDivElement();
-        //element.setAttribute( 'is', 'status-bar-haxe' );
-        //element.classList.add( 'status-bar-haxe', 'inline-block' );
         element.classList.add( 'haxe-status', 'inline-block' );
 
         icon = document.createSpanElement();
@@ -38,9 +35,6 @@ class StatusBarView {
         meta = document.createSpanElement();
         meta.classList.add( 'meta' );
         element.appendChild( meta );
-
-        info.textContent = 'XXX';
-        meta.textContent = 'XXX';
 
         Atom.contextMenu.add( {
             '.status-bar-haxe' : untyped [
@@ -82,7 +76,7 @@ class StatusBarView {
         }
     }
 
-    public function setHxmlPath( path : String ) {
+    public function setHxml( path : String ) {
         if( path == null ) {
             icon.style.display = 'none';
             info.textContent = meta.textContent = '';
@@ -94,17 +88,26 @@ class StatusBarView {
                 var str = projectParts[projectParts.length-1]+'/'+parts[1];
                 info.textContent = str.withoutExtension();
             }
+            meta.textContent = '';
+        }
+    }
+
+    public function setMeta( ?text : String ) {
+        if( text == null ) meta.textContent = '' else {
+            meta.textContent = text;
         }
     }
 
     public function destroy() {
+        info.removeEventListener( 'click', handleClickInfo );
+        element.remove();
     }
 
     function handleClickInfo(e) {
         if( e.ctrlKey ) {
-            project.build();
+            IDE.project.build();
         } else {
-            if( project.hxml != null )  workspace.open( project.hxml );
+            if( IDE.project.hxml != null ) workspace.open( IDE.project.hxml );
         }
     }
 
