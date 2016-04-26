@@ -13,6 +13,7 @@ import xxx.atom.view.BuildLogView;
 import xxx.atom.view.OutlineView;
 import xxx.atom.view.StatusBarView;
 import xxx.atom.view.ServerLogView;
+import xxx.atom.CompletionProvider;
 import Atom.config;
 import Atom.notifications;
 import Atom.workspace;
@@ -47,7 +48,7 @@ class IDE implements om.atom.Package {
 
     static var configChangeListener : Disposable;
     static var opener : Disposable;
-    //static var completion : atom.haxe.ide.CompletionProvider;
+    static var completion : CompletionProvider;
 
     static function activate( state : xxx.atom.IDE.State ) {
 
@@ -61,18 +62,14 @@ class IDE implements om.atom.Package {
         outline = new OutlineView();
         serverlog = new ServerLogView();
 
-        /*
-        trace( Atom.packages.getLoadedPackage( 'tree-view' ) );
-        for( panel in workspace.getLeftPanels() ) {
-            trace(panel);
-        }
-        */
-
         server = new Server( config.get( 'xxx.haxe_path' ), config.get( 'xxx.haxe_server_port' ) );
         server.onStart = function(){
+
             trace( 'haxe server stared: '+server.port, 'info' );
+
             disposeCommand( cmdStartServer );
             cmdStopServer = Atom.commands.add( 'atom-workspace', 'xxx:stop-server', function(_) server.stop() );
+
         }
         server.onData = function(str){
             trace(str);
@@ -92,9 +89,13 @@ class IDE implements om.atom.Package {
             server.start();
         });
 
+        var packagePath = Atom.packages.resolvePackagePath( 'xxx' );
+        completion = new CompletionProvider( packagePath+'/cache' );
+
         var buildStartTime : Float;
 
         project = new Project( Atom.project.getPaths() );
+
         project.on( 'hxml-select', function(hxml){
             if( hxml == null ) {
                 disposeCommand( cmdBuild );
@@ -110,11 +111,13 @@ class IDE implements om.atom.Package {
                 }
             }
         });
+
         project.on( 'build-start', function(hxml:String){
             statusbar.setStatus( 'active' );
             buildlog.clear().show();
             buildStartTime = now();
         });
+
         project.on( 'build-error', function(error:String){
 
             statusbar.setStatus( 'error' );
@@ -146,13 +149,13 @@ class IDE implements om.atom.Package {
                             //TODO decorate erroposition
                             });
                 }
-
-
             }
         });
+
         project.on( 'build-result', function(result:String){
             buildlog.info( result );
         });
+
         project.on( 'build-end', function(code:Int){
             switch code {
             case 0:
@@ -275,6 +278,7 @@ class IDE implements om.atom.Package {
         if( buildlog != null ) buildlog.destroy();
         if( serverlog != null ) serverlog.destroy();
         server.dispose();
+        completion.dispose();
     }
 
     static function initProject( ?hxmlFile : String ) {
@@ -320,8 +324,14 @@ class IDE implements om.atom.Package {
         bar.addLeftTile( { item: statusbar.element, priority:-100 } );
     }
 
+
+    static function provideAutoCompletion() {
+        //return getConfigValue( 'autocomplete_enabled' ) ? new atom.haxe.ide.CompletionProvider() : null;
+        return completion;
+    }
+
     public static inline function getConfigValue<T>( id : String ) : T
-        return Atom.config.get( 'xxx.'+id );
+        return Atom.config.get( 'xxx.$id' );
 
     public static function getTreeViewFile( ?ext : String ) : String {
         var path : String = Atom.packages.getLoadedPackage( 'tree-view' ).serialize().selectedPath;

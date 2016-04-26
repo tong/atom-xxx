@@ -35,5 +35,12 @@
     },
     "consumedServices": {
         "status-bar": { "versions": { "^1.0.0": "consumeStatusBar" } }
+    },
+    "providedServices": {
+        "autocomplete.provider": {
+            "versions": {
+                "2.0.0": "provideAutoCompletion"
+            }
+        }
     }
 }

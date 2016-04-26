@@ -28,7 +28,7 @@ class Project  {
     public var paths(default,null) : Array<String>;
     public var hxmlFiles(default,null) : Array<String>;
     public var hxml(default,null) : String;
-    //public var cwd(default,null) : String;
+    public var cwd(default,null) : String;
     //public var errors(default,null) : Array<Error>;
 
     //var disposables : CompositeDisposable;
@@ -54,6 +54,7 @@ class Project  {
     public function selectHxml( file : String ) {
         trace( 'Select hxml: $file' );
         hxml = file;
+        cwd = hxml.directory();
         emitter.emit( 'hxml-select', hxml );
     }
 
