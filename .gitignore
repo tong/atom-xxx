@@ -1,6 +1,5 @@
-*.zip
 _*
-exp/
-#lib/*.js*
 cache/
-TODO.md
+exp/
+*.zip
+TODO*

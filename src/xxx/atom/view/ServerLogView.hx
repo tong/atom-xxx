@@ -10,7 +10,7 @@ import Atom.workspace;
 using StringTools;
 
 @:keep
-class ServerLogView {
+class ServerLogView implements atom.Disposable {
 
     public var maxMessages(default,null) : Int;
 
@@ -34,6 +34,8 @@ class ServerLogView {
 
         element.addEventListener( 'click', handleClick, false  );
         //element.addEventListener( 'contextmenu', handleContextMenu, false  );
+
+        Atom.commands.add( 'atom-workspace', 'xxx:toggle-server-log', function(e) toggle() );
     }
 
     public inline function isVisible() : Bool {
@@ -156,12 +158,11 @@ class ServerLogView {
             messages.removeChild( messages.firstChild );
     }
 
-    public function destroy() {
+    public function dispose() {
         element.removeEventListener( 'click', handleClick );
         //element.removeEventListener( 'contextmenu', handleContextMenu );
         panel.destroy();
     }
-
 
     function handleClick(e) {
         if( e.ctrlKey ) {

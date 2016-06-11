@@ -5,49 +5,53 @@
 	100% { transform: rotate(-360deg); }
 }
 
-status-bar .haxe-status {
+status-bar .status-bar-xxx {
 
 	.haxe-icon {
+
 		//margin-left: .2em;
 		margin-right: 2px;
 		//font-size: 112%;
 		color: @text-color;
 		transition: color 0.15s;
+
+		&.active {
+			color: @text-color-highlight;
+			animation: icon_spin 0.4s linear infinite forwards;
+		}
+		&.error {
+			color: @text-color-error;
+		}
+		&.success {
+			color: @text-color-success;
+		}
+		/*
+		&.idle {
+			color: @text-color-subtle;
+			//opacity: 0.5;
+		}
+		*/
 	}
-	.haxe-icon.active {
-		color: @text-color-highlight;
-		animation: icon_spin 0.4s linear infinite forwards;
-	}
-	.haxe-icon.error {
-		color: @text-color-error;
-	}
-	.haxe-icon.success {
-		color: @text-color-success;
-	}
-	/*
-	.haxe-icon.idle {
-		color: @text-color-subtle;
-		//opacity: 0.5;
-	}
-	*/
 
 	.info {
+
 		margin-left: 2px;
 		margin-right: 2px;
 		transition: color 0.15s;
 		cursor: pointer;
-	}
-	.info:hover {
-		text-decoration: underline;
-	}
-	.info.active {
-		color: @text-color-highlight;
-	}
-	.info.error {
-		color: @text-color-error;
-	}
-	.info.success {
-		color: @text-color-success;
+
+		&:hover {
+			text-decoration: underline;
+		}
+		&.active {
+			color: @text-color-highlight;
+		}
+		&.error {
+			color: @text-color-error;
+		}
+		&.success {
+			color: @text-color-success;
+		}
 	}
 
 	.meta {

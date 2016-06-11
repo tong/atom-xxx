@@ -3,17 +3,20 @@ package xxx.atom;
 import js.Browser.console;
 import js.Error;
 import js.node.Fs;
-import haxe.Timer;
+import atom.CompositeDisposable;
 import atom.Disposable;
+import atom.File;
 import atom.TextEditor;
+import haxe.Timer;
 import om.Time.now;
 import om.haxe.ErrorMessage;
+import om.util.StringUtil;
 import xxx.Server;
+//import xxx.atom.CompletionProvider;
 import xxx.atom.view.BuildLogView;
 import xxx.atom.view.OutlineView;
 import xxx.atom.view.StatusBarView;
 import xxx.atom.view.ServerLogView;
-import xxx.atom.CompletionProvider;
 import Atom.config;
 import Atom.notifications;
 import Atom.workspace;
@@ -23,61 +26,107 @@ using haxe.io.Path;
 using om.io.FileUtil;
 
 typedef State = {
-    var hxml : String;
-    //var server : String;
+    hxml : String,
+    serverlog : Bool,
 }
 
 @:keep
-@:access(xxx.atom.Project)
 class IDE implements om.atom.Package {
 
     static inline function __init__() untyped module.exports = xxx.atom.IDE;
 
-    public static var server(default,null) : Server;
-    public static var project(default,null) : Project;
+    public static var hxmlFiles(default,null) : Array<String>;
+    public static var hxml(default,null) : File;
 
     static var statusbar : StatusBarView;
     static var buildlog : BuildLogView;
-    static var outline : OutlineView;
+    //static var outline : OutlineView;
     static var serverlog : ServerLogView;
+
+    //static var server : Server;
 
     static var cmdBuild : Disposable;
     static var cmdSelectHxml : Disposable;
     static var cmdStartServer : Disposable;
     static var cmdStopServer : Disposable;
 
-    static var configChangeListener : Disposable;
+    static var disposables : CompositeDisposable;
     static var opener : Disposable;
-    static var completion : CompletionProvider;
+    static var configChangeListener : Disposable;
+    //static var completion : CompletionProvider;
 
     static function activate( state : xxx.atom.IDE.State ) {
 
         #if debug
         haxe.Log.trace = __trace;
-        trace( 'Atom-xxx '+state );
         #end
 
-        statusbar = new StatusBarView();
-        buildlog = new BuildLogView();
-        outline = new OutlineView();
-        serverlog = new ServerLogView();
+        trace( 'Atom-xxx '+state );
 
-        server = new Server( config.get( 'xxx.haxe_path' ), config.get( 'xxx.haxe_server_port' ) );
+        disposables = new CompositeDisposable();
+
+        disposables.add( statusbar = new StatusBarView() );
+        disposables.add( buildlog = new BuildLogView() );
+        disposables.add( serverlog = new ServerLogView() );
+        //outline = new OutlineView();
+
+        searchHxmlFiles(function(files:Array<String>){
+
+            hxmlFiles = files;
+
+            if( state != null && state.hxml != null ) {
+                Fs.access( state.hxml, function(e){
+                    selectHxml( (e == null) ? state.hxml : hxmlFiles[0] );
+                });
+            } else {
+                selectHxml( hxmlFiles[0] );
+            }
+
+            cmdBuild = Atom.commands.add( 'atom-workspace', 'xxx:build', function(e) build() );
+            cmdSelectHxml = Atom.commands.add( 'atom-workspace', 'xxx:select-hxml', function(e) {
+                //TODO workspace.addModalPanel();
+                var treeViewFile = getTreeViewFile( 'hxml' );
+                if( treeViewFile != null ) {
+                    selectHxml( treeViewFile );
+                }
+            });
+
+            /*
+            //TODO
+
+            for( dir in Atom.project.getDirectories() ) {
+                disposables.add( dir.onDidChange(function(){
+                    trace("content changed");
+                }) );
+            }
+
+            //Atom.project.getPaths()
+            Atom.project.onDidChangePaths(function(paths){
+                for( dir in paths ) {
+                    trace(dir);
+                }
+            });
+            */
+
+            if( state != null && state.serverlog ) {
+                serverlog.show();
+            }
+        });
+
+        /*
+        server = new Server( getConfigValue( 'haxe_path' ), getConfigValue( 'haxe_server_port' ) );
         server.onStart = function(){
-
             trace( 'haxe server stared: '+server.port, 'info' );
-
             disposeCommand( cmdStartServer );
             cmdStopServer = Atom.commands.add( 'atom-workspace', 'xxx:stop-server', function(_) server.stop() );
-
         }
         server.onData = function(str){
-            trace(str);
-            serverlog.add(str);
+            //trace(str);
+            serverlog.add( str );
         }
-        server.onError = function(msg){
-            trace( msg, 'error' );
-            notifications.addWarning( msg );
+        server.onError = function(e){
+            trace( e, 'error' );
+            notifications.addWarning( e );
         }
         server.onStop = function(code){
             trace( 'haxe server stopped: $code', (code == 0) ? 'info' : 'error' );
@@ -85,18 +134,24 @@ class IDE implements om.atom.Package {
             cmdStartServer = Atom.commands.add( 'atom-workspace', 'xxx:start-server', function(_) server.start() );
         }
 
+        Timer.delay( function(){
+            //trace( 'Starting haxe server ...' );
+            //server.start();
+        }, getConfigValue( 'haxe_server_startdelay' ) * 1000 );
+
         cmdStartServer = Atom.commands.add( 'atom-workspace', 'xxx:start-server', function(e) {
             server.start();
         });
+        */
 
+        /*
         var packagePath = Atom.packages.resolvePackagePath( 'xxx' );
         completion = new CompletionProvider( packagePath+'/cache' );
 
-        var buildStartTime : Float;
-
+        var buildStartTimestamp : Float;
         project = new Project( Atom.project.getPaths() );
-
         project.on( 'hxml-select', function(hxml){
+            trace(hxml);
             if( hxml == null ) {
                 disposeCommand( cmdBuild );
             } else {
@@ -111,17 +166,13 @@ class IDE implements om.atom.Package {
                 }
             }
         });
-
         project.on( 'build-start', function(hxml:String){
+            buildStartTimestamp = now();
             statusbar.setStatus( 'active' );
             buildlog.clear().show();
-            buildStartTime = now();
         });
-
         project.on( 'build-error', function(error:String){
-
             statusbar.setStatus( 'error' );
-
             for( line in error.split( '\n' ) ) {
 
                 if( line.length == 0 )
@@ -135,19 +186,22 @@ class IDE implements om.atom.Package {
                     buildlog.errorMessage( err );
 
                     var lineNumber = err.line - 1;
-                    var column = if( err.lines != null ) err.lines.start;
-                    else if( err.characters != null ) err.characters.start;
-                    else err.character;
+                    var column = if( err.lines != null )
+                        err.lines.start;
+                    else if( err.characters != null )
+                        err.characters.start;
+                    else
+                        err.character;
 
                     workspace.open( err.path, {
                         initialLine: lineNumber,
                         initialColumn: column,
                         activatePane: true,
                         searchAllPanes : true
-                        }).then( function(editor:TextEditor){
-                            editor.scrollToCursorPosition();
-                            //TODO decorate erroposition
-                            });
+                    }).then( function(editor:TextEditor){
+                        editor.scrollToCursorPosition();
+                        //TODO decorate erroposition
+                    });
                 }
             }
         });
@@ -157,31 +211,34 @@ class IDE implements om.atom.Package {
         });
 
         project.on( 'build-end', function(code:Int){
+
             switch code {
             case 0:
                 statusbar.setStatus( 'success' );
             case _:
                 statusbar.setStatus( 'error' );
             }
-            var time = Std.string( (now() - buildStartTime ) );
-            time = time.substr( 0, time.indexOf('.') );
-            statusbar.setMeta( time );
+
+            var buildTime = (now() - buildStartTimestamp) / 1000;
+            var buildTimeString = Std.string( buildTime );
+            buildTimeString = buildTimeString.substr( 0, buildTimeString.indexOf( '.' )+2 );
+            statusbar.setMetaInfo( buildTimeString+'s' );
         });
 
-        configChangeListener = Atom.config.onDidChange( 'xxx', {}, function(e){
+        initProject( state.hxml );
+
+        configChangeListener = config.onDidChange( 'xxx', {}, function(e){
             /*
             var nv = e.newValue;
             var ov = e.oldValue;
             if( nv.haxe_path != ov.haxe_path ||
-                nv.haxe_server_port != ov.haxe_server_port ||
-                nv.haxe_server_host != ov.haxe_server_host ) {
-                    server.stop();
-                    Timer.delay( startServer, getConfigValue( 'server_startdelay' ) * 1000 );
-                }
-                */
+            nv.haxe_server_port != ov.haxe_server_port ||
+            nv.haxe_server_host != ov.haxe_server_host ) {
+            server.stop();
+            Timer.delay( startServer, getConfigValue( 'server_startdelay' ) * 1000 );
+            }
+            * /
         });
-
-        initProject( state.hxml );
 
         /*
             project.onBuild(
@@ -268,47 +325,134 @@ class IDE implements om.atom.Package {
 
     static function serialize() : State {
         return {
-            hxml: project.hxml,
-            //server:
+            hxml: (hxml == null) ? null : hxml.getPath(),
+            serverlog: serverlog.isVisible()
         }
     }
 
     static function deactivate() {
-        if( statusbar != null ) statusbar.destroy();
-        if( buildlog != null ) buildlog.destroy();
-        if( serverlog != null ) serverlog.destroy();
-        server.dispose();
-        completion.dispose();
+
+        if( statusbar != null ) statusbar.dispose();
+        //if( buildlog != null ) buildlog.dispose();
+        //if( serverlog != null ) serverlog.dispose();
+
+        disposables.dispose();
+        //server.dispose();
+//        completion.dispose();
     }
 
-    static function initProject( ?hxmlFile : String ) {
-        searchHxmlFiles( project.paths, function(e,found){
-            if( e != null ) {
-                trace( e, 'error' );
-                notifications.addError( Std.string( e ) );
-            } else {
-                project.hxmlFiles = found;
-                if( found.length > 0 ) {
-                    project.selectHxml(
-                        if( hxmlFile != null && project.hxmlFiles.has( hxmlFile ) )
-                            hxmlFile
-                        else
-                            found[0]
-                    );
-                    if( cmdSelectHxml == null ) {
-                        cmdSelectHxml = Atom.commands.add( 'atom-workspace', 'xxx:select-hxml', function(e) {
-                            trace(e);
-                            trace(e.target);
-                            //TODO workspace.addModalPanel();
-                            var treeViewFile = getTreeViewFile( 'hxml' );
-                            if( treeViewFile != null ) {
-                                project.selectHxml( treeViewFile );
-                            }
+    public static inline function getConfigValue<T>( id : String ) : T {
+        return Atom.config.get( 'xxx.$id' );
+    }
+
+    public static function selectHxml( path : String ) {
+        if( path == null ) {
+            hxml = null;
+        } else {
+            if( hxml != null && path == hxml.getPath() ) {
+                return;
+            }
+            trace(":: "+path );
+            hxml = new File( path );
+            hxml.onDidChange(function(){
+                //TODO
+            });
+            hxml.onDidRename(function(){
+                //TODO
+                trace("RENAME");
+                statusbar.setHxml( hxml );
+            });
+            hxml.onDidDelete(function(){
+                //TODO
+                trace("DELETE");
+                hxmlFiles.remove( path );
+                selectHxml( hxmlFiles[0] );
+            });
+        }
+        statusbar.setHxml( hxml );
+    }
+
+    public static function build() {
+
+        if( hxml == null ) {
+            trace( 'no hxml file selected', 'warn' );
+            return;
+        }
+
+        /*
+        if( build != null ) {
+            trace( 'build already active', 'warn' );
+            return;
+        }
+        */
+
+        //trace( 'Build '+hxml.getPath() );
+
+        buildlog.clear().show();
+        statusbar.setStatus( 'active' );
+
+        var cwd = hxml.getParent().getPath();
+        var args = [hxml.getBaseName()];
+        var build = new Build();
+        //builds.push( build );
+        //var log = new BuildLogView();
+        var timeStart = now();
+        build.start( args, { cwd: cwd },
+            function(error){
+                //buildlog.error( e );
+                for( line in error.split( '\n' ) ) {
+                    if( line.length == 0 )
+                        continue;
+                    var err = ErrorMessage.parse( line );
+                    if( err == null ) {
+                        buildlog.error( line );
+                    } else {
+
+                        buildlog.errorMessage( err );
+
+                        var lineNumber = err.line - 1;
+                        var column = if( err.lines != null ) err.lines.start;
+                        else if( err.characters != null ) err.characters.start;
+                        else err.character;
+
+                        workspace.open( err.path, {
+                            initialLine: lineNumber,
+                            initialColumn: column,
+                            activatePane: true,
+                            searchAllPanes : true
+                        }).then( function(editor:TextEditor){
+                            editor.scrollToCursorPosition();
+                            //TODO decorate erroposition
                         });
                     }
                 }
+            },
+            function(r){
+                buildlog.info( r );
+            },
+            function(code){
+                switch code {
+                case 0:
+                    statusbar.setStatus( 'success' );
+                    var timeTotal = (now() - timeStart) / 1000;
+                    var timeTotalStr = StringUtil.parseFloat( timeTotal, 1 ) + 's';
+                    statusbar.setMetaInfo( timeTotalStr );
+                default:
+                    statusbar.setStatus( 'error' );
+                }
+                build = null;
             }
-        });
+        );
+    }
+
+    static function consumeStatusBar( bar ) {
+        bar.addLeftTile( { item: statusbar.element, priority: -100 } );
+    }
+
+    static function provideAutoCompletion() {
+        //return getConfigValue( 'autocomplete_enabled' ) ? new atom.haxe.ide.CompletionProvider() : null;
+        //return completion;
+        return null;
     }
 
     /*
@@ -319,19 +463,6 @@ class IDE implements om.atom.Package {
         };
     }
     */
-
-    static function consumeStatusBar( bar ) {
-        bar.addLeftTile( { item: statusbar.element, priority:-100 } );
-    }
-
-
-    static function provideAutoCompletion() {
-        //return getConfigValue( 'autocomplete_enabled' ) ? new atom.haxe.ide.CompletionProvider() : null;
-        return completion;
-    }
-
-    public static inline function getConfigValue<T>( id : String ) : T
-        return Atom.config.get( 'xxx.$id' );
 
     public static function getTreeViewFile( ?ext : String ) : String {
         var path : String = Atom.packages.getLoadedPackage( 'tree-view' ).serialize().selectedPath;
@@ -345,14 +476,14 @@ class IDE implements om.atom.Package {
         }
     }
 
-    static function searchHxmlFiles( ?paths : Array<String>, callback : Error->Array<String>->Void )
+    static function searchHxmlFiles( ?paths : Array<String>, callback : Array<String>->Void )
         __searchHxmlFiles( (paths == null) ? Atom.project.getPaths() : paths, [], callback );
 
-    static function __searchHxmlFiles( paths : Array<String>, found : Array<String>, callback : Error->Array<String>->Void ) {
-        if( paths.length == 0 ) callback( null, found ) else {
+    static function __searchHxmlFiles( paths : Array<String>, found : Array<String>, callback : Array<String>->Void ) {
+        if( paths.length == 0 ) callback( found ) else {
             var path = paths.shift();
             Fs.readdir( path, function(err,entries){
-                if( err != null ) callback( err, null ) else {
+                if( err != null ) notifications.addError( Std.string(err), null ) else {
                     for( e in entries ) {
                         if( e.charAt(0) == '.' )
                             continue;

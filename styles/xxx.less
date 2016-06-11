@@ -16,15 +16,18 @@
 }
 
 .haxe-icon {
+
 	display: inline-block;
+	width: 1em;
+	line-height: 1em;
+
 	font-family: HaxeIDEFont;
 	font-weight: normal;
 	font-style: normal;
 	font-size: @font-size;
 	-webkit-font-smoothing: antialiased;
-	width: 1em;
-	line-height: 1em;
-}
-.haxe-icon:before {
-	content: '\e805';
+
+	&:before {
+		content: '\e805';
+	}
 }

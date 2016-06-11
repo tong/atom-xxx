@@ -1,12 +1,14 @@
 -js lib/xxx.js
 -lib hxatom
--lib thx.semver
 -lib markdown
 #-lib haxeparser
 -cp src
+-lib om.core
+-lib om.io
+#-lib om.term
 -cp ../../lib/om.atom/src
--cp ../../lib/om.core/src
+#-cp ../../lib/om.core/src
 -cp ../../lib/om.haxe/src
--cp ../../lib/om.io/src
+#-cp ../../lib/om.io/src
 -cp ../../lib/om.term/src
 xxx.atom.IDE

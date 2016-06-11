@@ -4,6 +4,7 @@ import Atom.contextMenu;
 import Atom.workspace;
 import atom.Panel;
 import js.Browser.document;
+import js.Browser.window;
 import js.html.Element;
 import js.html.DivElement;
 import js.html.LIElement;
@@ -14,7 +15,7 @@ import om.haxe.ErrorMessage;
 
 using haxe.io.Path;
 
-class BuildLogView {
+class BuildLogView implements atom.Disposable {
 
     var panel : Panel;
     var element : DivElement;
@@ -26,10 +27,14 @@ class BuildLogView {
         element.classList.add( 'haxe-buildlog', 'resizer' );
 
         messageContainer = document.createOListElement();
+        //messageContainer.classList.add( 'list-group', 'messages', 'scroller' );
         messageContainer.classList.add( 'messages', 'scroller' );
         element.appendChild( messageContainer );
 
-        panel = workspace.addBottomPanel( { item: element, visible: false } );
+        panel = workspace.addBottomPanel( { item: element, visible: true } );
+
+        element.addEventListener( 'contextmenu', handleRightClick, false );
+        //window.addEventListener( 'keydown', handleKeyDown, false );
     }
 
     public inline function isVisible() : Bool
@@ -56,13 +61,14 @@ class BuildLogView {
         return this;
     }
 
-    public function destroy() {
+    public function dispose() {
         panel.destroy();
     }
 
     public function log( text : String, level : String ) : BuildLogView {
-        var view = new MessageView( text, level );
-        messageContainer.appendChild( view.element );
+        var msg = new MessageView( text, level );
+        //messageContainer.appendChild( view.element );
+        appendMessage( msg );
         return this;
     }
 
@@ -73,11 +79,42 @@ class BuildLogView {
         return log( text, 'error' );
 
     public function errorMessage( error : ErrorMessage ) : BuildLogView {
-        var view = new ErrorMessageView( error );
-        messageContainer.appendChild( view.element );
+        var msg = new ErrorMessageView( error );
+        //messageContainer.appendChild( msg.element );
+        appendMessage( msg );
         return this;
     }
 
+    function appendMessage( msg : MessageView, printTime = true ) {
+        /*
+        var container = document.createDivElement();
+        if( printTime ) {
+            var now = Date.now();
+            var time = document.createSpanElement();
+            time.classList.add();
+            time.textContent += now.getHours();
+            time.textContent += ':'+now.getMinutes();
+            time.textContent += ':'+now.getSeconds();
+            container.appendChild( time );
+        }
+        container.appendChild( msg.element );
+        */
+        messageContainer.appendChild( msg.element );
+        //messageContainer.appendChild( container );
+    }
+
+    function handleRightClick(e) {
+        if( e.which != 1 ) {
+            hide();
+            //clear();
+        }
+    }
+
+    /*
+    function handleKeyDown(e) {
+        trace(e.keyCode);
+    }
+    */
 }
 
 private class MessageView {
@@ -90,6 +127,7 @@ private class MessageView {
     public function new( text : String, status : String, ?iconId : String ) {
 
         element = document.createLIElement();
+        //element.classList.add( 'list-item', 'message', status );
         element.classList.add( 'message', status );
 
         /*
@@ -100,15 +138,22 @@ private class MessageView {
         element.appendChild( time );
         */
 
+        /*
         if( iconId != null ) {
             var i = document.createElement('i');
             i.classList.add( 'icon', 'icon-$iconId' );
             element.appendChild(i);
         }
+        */
 
         content = document.createDivElement();
         content.classList.add( 'content', status );
         content.textContent = text;
+
+        if( iconId != null ) {
+            content.classList.add( 'icon', 'icon-$iconId' );
+        }
+
         /*
         for( line in text.split( '\n' ) ) {
             var e = document.createDivElement();

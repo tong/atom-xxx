@@ -5,24 +5,30 @@ import js.html.Element;
 import js.html.AnchorElement;
 import js.html.DivElement;
 import js.html.SpanElement;
-import Atom.contextMenu;
+import atom.Disposable;
+import atom.File;
 import Atom.workspace;
 
 using haxe.io.Path;
+using om.util.ArrayUtil;
 
-class StatusBarView {
+class StatusBarView implements atom.Disposable {
 
     public var element(default,null) : DivElement;
 
     var icon : SpanElement;
     var info : AnchorElement;
     var meta : SpanElement;
+
     var status : String;
+    var hxml : String; // current hxml path in status bar
+    var contextMenu : Disposable;
 
     public function new() {
 
         element = document.createDivElement();
-        element.classList.add( 'haxe-status', 'inline-block' );
+        element.classList.add( 'status-bar-xxx', 'inline-block' );
+        //element.setAttribute( 'is', 'status-bar-xxx' );
 
         icon = document.createSpanElement();
         icon.classList.add( 'haxe-icon' );
@@ -36,33 +42,8 @@ class StatusBarView {
         meta.classList.add( 'meta' );
         element.appendChild( meta );
 
-        Atom.contextMenu.add( {
-            '.status-bar-haxe' : untyped [
-                { label: 'BuildAll' },
-                { type: 'separator' }
-            ]
-        });
-
         info.addEventListener( 'click', handleClickInfo, false );
     }
-
-    /*
-    public function init() {
-
-        setHxmlPath( project.hxml );
-
-        for( hxmlFile in project.hxmlFiles ) {
-            var parts = Atom.project.relativizePath( hxmlFile );
-            var label = parts[0].split( '/' ).pop() +'/'+ parts[1];
-            Atom.contextMenu.add( {
-                '.status-bar-haxe' : [
-                    { label: label }]
-            });
-        }
-
-        project.onDidChangeHxml( handleHxmlChange );
-    }
-    */
 
     public function setStatus( status : String ) {
         if( status != this.status ) {
@@ -74,40 +55,54 @@ class StatusBarView {
             icon.classList.add( status );
             info.classList.add( status );
         }
+        meta.textContent = '';
     }
 
-    public function setHxml( path : String ) {
-        if( path == null ) {
+    public function setHxml( file : File ) {
+        if( file == null ) {
+            this.hxml = null;
             icon.style.display = 'none';
             info.textContent = meta.textContent = '';
-        } else {
-            icon.style.display = 'inline-block';
-            var parts = Atom.project.relativizePath( path );
-            if( parts[0] != null ) {
-                var projectParts = parts[0].split( '/' );
-                var str = projectParts[projectParts.length-1]+'/'+parts[1];
-                info.textContent = str.withoutExtension();
+            if( contextMenu != null ) contextMenu.dispose();
+        } else{
+            var filePath = file.getPath();
+            if( filePath != this.hxml ) {
+                this.hxml = filePath;
+                icon.style.display = 'inline-block';
+                var parts = file.getParent().getPath().split( '/' );
+                //var parts = Atom.project.relativizePath( file.getPath() );
+                info.textContent = parts.last() + '/' + file.getBaseName().withoutExtension();
+                meta.textContent = '';
+                contextMenu = Atom.contextMenu.add({
+                    '.status-bar-xxx .info': [
+                    { label: 'Build', command: 'xxx.build' }
+                    ]
+                });
             }
+        }
+    }
+
+    public function setMetaInfo( ?str : String ) {
+        if( str == null ) {
             meta.textContent = '';
+        } else {
+            meta.textContent = str;
         }
     }
 
-    public function setMeta( ?text : String ) {
-        if( text == null ) meta.textContent = '' else {
-            meta.textContent = text;
-        }
-    }
-
-    public function destroy() {
+    public function dispose() {
+        hxml = null;
         info.removeEventListener( 'click', handleClickInfo );
         element.remove();
+        if( contextMenu != null ) contextMenu.dispose();
+
     }
 
     function handleClickInfo(e) {
         if( e.ctrlKey ) {
-            IDE.project.build();
+            IDE.build();
         } else {
-            if( IDE.project.hxml != null ) workspace.open( IDE.project.hxml );
+            if( IDE.hxml != null ) workspace.open( IDE.hxml.getPath() );
         }
     }
 

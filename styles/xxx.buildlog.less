@@ -5,36 +5,59 @@
 
     padding: 0;
 	overflow-y: auto;
+    border-left: 1px solid @pane-item-border-color;
 
     font-family: @font-family-mono;
 
     ol.messages {
 
         list-style-type: none;
+        line-height: normal;
         margin: 0;
         padding: 0;
 
         li.message {
 
+            padding: 0px 0px 0px 8px;
+
+            &:before {
+                //content: "";
+            }
+
+            &:not(:last-child) {
+                border-bottom: 1px dotted @pane-item-border-color;
+            }
+            &:last-child {
+                border-bottom: 1px solid @pane-item-border-color;
+            }
+
+            /*
+            i.icon::before {
+                margin-left: 2px;
+                width: 13px;
+            }
+            */
+
             time {
                 display: inline-block;
+                float: left;
+                margin-right: 4px;
                 color: @text-color-subtle;
+                &:before { content: "["; }
+                &:after { content: "]"; }
             }
 
             .content {
-                display: inline-block;
+                //display: inline-block;
+                //padding: 1px 2px 0px 4px;
                 -webkit-user-select: text !important;
             }
-        }
-        li.message:not(:last-child) {
-            border-bottom: 1px dotted @pane-item-border-color;
-        }
-        li.message:last-child {
-            border-bottom: 1px solid @pane-item-border-color;
-        }
 
-        li.message.error {
-            color: @text-color-error;
+
+            &.error {
+                background: @background-color-error;
+                color: @text-color-highlight;// @text-color-error;
+            }
         }
     }
 }
