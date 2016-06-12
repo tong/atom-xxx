@@ -1,6 +1,6 @@
 {
     "name": "xxx",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "description": "Sex with haxe",
     "keywords": ["haxe","ide"],
     "repository": "https://github.com/tong/atom-xxx",
@@ -30,7 +30,7 @@
             "description": "The delay in seconds before starting the haxe server.",
             "type": "integer",
             "minimum": 0,
-            "default": 1
+            "default": 2
         },
         "haxe_server_autostart":{
             "title": "Haxe Server Autostart",

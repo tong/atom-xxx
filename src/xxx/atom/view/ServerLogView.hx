@@ -21,7 +21,7 @@ class ServerLogView implements atom.Disposable {
     @:allow(xxx.atom.IDE) function new( ?visible : Dynamic ) {
 
         //maxMessages = IDE.getConfigValue( 'serverlog_max_messages' );
-        maxMessages = 2000; //IDE.getConfigValue( 'serverlog_max_messages' );
+        maxMessages = 5000; //IDE.getConfigValue( 'serverlog_max_messages' );
 
         element = document.createDivElement();
         element.classList.add( 'haxe-serverlog', 'resizer' );
@@ -95,7 +95,7 @@ class ServerLogView implements atom.Disposable {
             e.classList.add( 'message', firstWord );
             messages.appendChild( e );
 
-            trace(firstWord);
+            //trace(firstWord);
 
             switch firstWord {
             case 'parsed':

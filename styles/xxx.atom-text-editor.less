@@ -25,9 +25,14 @@ atom-text-editor[data-grammar="source haxe"] {
 
 	.block-decoration {
 		//background: @tab-bar-background-color;
-		background: #0b0b0b;
-		color: #2f2f2f;
+		//background: #0b0b0b;
+		//color: #2f2f2f;
 		//-webkit-filter: invert(100%);
 		//white-space: pre;
+
+		&.error {
+			background: @text-color-error;
+			//color: #2f2f2f;
+		}
 	}
 }

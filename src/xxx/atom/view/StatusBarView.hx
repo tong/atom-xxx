@@ -10,7 +10,6 @@ import atom.File;
 import Atom.workspace;
 
 using haxe.io.Path;
-using om.util.ArrayUtil;
 
 class StatusBarView implements atom.Disposable {
 
@@ -45,7 +44,7 @@ class StatusBarView implements atom.Disposable {
         info.addEventListener( 'click', handleClickInfo, false );
     }
 
-    public function setStatus( status : String ) {
+    public function setStatus( ?status : String ) {
         if( status != this.status ) {
             if( this.status != null ) {
                 icon.classList.remove( this.status );
@@ -69,9 +68,12 @@ class StatusBarView implements atom.Disposable {
             if( filePath != this.hxml ) {
                 this.hxml = filePath;
                 icon.style.display = 'inline-block';
-                var parts = file.getParent().getPath().split( '/' );
-                //var parts = Atom.project.relativizePath( file.getPath() );
-                info.textContent = parts.last() + '/' + file.getBaseName().withoutExtension();
+                var parts = Atom.project.relativizePath( file.getPath() );
+                if( parts[0] != null ) {
+                    var projectParts = parts[0].split( '/' );
+                    var str = projectParts[projectParts.length-1]+'/'+parts[1];
+                    info.textContent = str.withoutExtension();
+                }
                 meta.textContent = '';
                 contextMenu = Atom.contextMenu.add({
                     '.status-bar-xxx .info': [
@@ -88,6 +90,10 @@ class StatusBarView implements atom.Disposable {
         } else {
             meta.textContent = str;
         }
+    }
+
+    public function setServerInfo( port : Int ) {
+        icon.title = ''+port;
     }
 
     public function dispose() {

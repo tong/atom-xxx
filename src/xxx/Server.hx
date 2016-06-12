@@ -44,8 +44,6 @@ class Server {
 		if( verbose ) args.push( '-v' );
 		args = args.concat( ['--wait','$host:$port'] );
 
-        trace( 'Starting haxe server: $host:$port' );
-
 		active = true;
 
         process = spawn( exe, args, {} );
@@ -60,9 +58,10 @@ class Server {
 
     public function stop() {
         if( active ) {
-            active = false;
+            //active = false;
 			try {
 				process.disconnect();
+                try process.kill() catch(e:Dynamic) trace(e);
 				process = null;
 			} catch(e:Dynamic) {
 				trace(e);
@@ -88,6 +87,7 @@ class Server {
     }
 
     function handleExit( code : Int ) {
+        trace(code);
         active = false;
         onStop( code );
     }
