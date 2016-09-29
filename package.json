@@ -1,12 +1,12 @@
 {
     "name": "xxx",
-    "version": "0.5.1",
+    "version": "0.6.0",
     "description": "Sex with haxe",
-    "keywords": ["haxe","ide"],
+    "keywords": ["haxe","ide","xxx"],
     "repository": "https://github.com/tong/atom-xxx",
     "license": "MIT",
     "engines": {
-        "atom": ">=1.8.0 <2.0.0"
+        "atom": ">=1.10.2 .0 <2.0.0"
     },
     "dependencies": {
         "language-haxe": "^0.4.3"
@@ -34,7 +34,7 @@
         },
         "haxe_server_autostart":{
             "title": "Haxe Server Autostart",
-            "description": "Start the haxe server automatically.",
+            "description": "Automatically start a haxe server if a hxml file specifies the --connect parameter.",
             "type": "boolean",
             "default": true
         }

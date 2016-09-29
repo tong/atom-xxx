@@ -4,11 +4,11 @@
         'submenu': [
             'label': 'XXX'
             'submenu': [
-                { 'label': 'Start Server', 'command': 'xxx:server-start' },
-                { 'label': 'Stop Server', 'command': 'xxx:server-stop' },
-                { 'label': 'Toggle Server Log', 'command': 'xxx:toggle-serverlog' },
+                { 'label': 'Build', 'command': 'haxe:build' },
                 { type: 'separator' },
-
+                { 'label': 'Start Server', 'command': 'haxe:start-server' },
+                { 'label': 'Stop Server', 'command': 'haxe:stop-server' },
+                { 'label': 'Toggle Server Log', 'command': 'haxe:toggle-server-log' }
             ]
         ]
     }
@@ -16,14 +16,14 @@
 'context-menu':
     'atom-text-editor[data-grammar$=hxml]': [
         { type: 'separator' },
-        { 'label': 'Build', 'command': 'xxx:build' },
+        { 'label': 'Build', 'command': 'haxe:build' },
+        { type: 'separator' }
     ]
     'atom-pane[data-active-item-name$=\\.hxml]': [
         { type: 'separator' },
-        { 'label': 'Build', 'command': 'xxx:build' },
+        { 'label': 'Build', 'command': 'haxe:build' },
     ]
     '[data-name$=\\.hxml]': [
-        { label: 'Build', command: 'xxx:build' },
-        { label: 'Select', command: 'xxx:select-hxml' },
+        { label: 'Build', command: 'haxe:build' },
         { type: 'separator' }
     ]

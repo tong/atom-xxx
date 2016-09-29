@@ -1,95 +1,72 @@
 package xxx;
 
-import js.Browser.console;
 import js.node.ChildProcess.spawn;
 import js.node.child_process.ChildProcess as Process;
 
-class Server {
+class Server extends atom.Emitter {
 
-    public dynamic function onStart() {}
-    public dynamic function onData( str : String) {}
-    public dynamic function onError( str : String ) {}
-    public dynamic function onStop( code : Int ) {}
-
-    public var exe(default,null) : String;
+	public var path(default,null) : String;
     public var port(default,null) : Int;
     public var host(default,null) : String;
-    public var active(default,null) : Bool;
+	public var verbose : Bool;
+    public var running(default,null) : Bool;
 
-    var process : Process;
+	var proc : Process;
 
-    public function new( exe = 'haxe', port : Int, host = '127.0.0.1' ) {
-        this.exe = exe;
-        this.port = port;
-        this.host = host;
-        active = false;
+	public function new( path = 'haxe', port : Int, host = '127.0.0.1', verbose = true ) {
+		super();
+		this.path = path;
+		this.port = port;
+		this.host = host;
+		this.verbose = verbose;
+		running = false;
     }
 
-    /*
-    public function getHaxeFlag() : Array<String> {
-        if( !isRunning() )
-            return [];
-        var str = Std.string( HaxeIDE.server.port );
-        if( host != null ) str = host + ':' + str;
-        return ['--connect',str];
-    }
-    */
+	public inline function onStart( h : Void->Void ) on( 'start', h );
+	public inline function onError( h : String->Void ) on( 'error', h );
+	public inline function onMessage( h : String->Void ) on( 'message', h );
+	public inline function onStop( h : Int->Void ) on( 'stop', h );
 
-    public function start( verbose = true ) {
+	//public function start( verbose = true, onData : String->Void, onError : String->Void, onExit : Int->Void ) {
+	public function start() {
 
-        if( active )
-            throw 'already active';
-
-        var args = new Array<String>();
+		var args = new Array<String>();
 		if( verbose ) args.push( '-v' );
-		args = args.concat( ['--wait','$host:$port'] );
+		args.push( '--wait' );
+		args.push( '$host:$port' );
 
-		active = true;
-
-        process = spawn( exe, args, {} );
-        process.stdout.on( 'data', handleData );
-        process.stderr.on( 'data', handleError );
-        process.on( 'exit', handleExit );
-        process.on( 'message', function(e) trace(e) );
-        process.on( 'error', function(e) {
+		proc = spawn( path, args, {} );
+        proc.stdout.on( 'data', function(e) emit( 'message', e.toString() ) );
+        proc.stderr.on( 'data', function(e) emit( 'error', e.toString() ) );
+        //proc.on( 'exit', function(code) emit( 'stop', code ) );
+        proc.on( 'close', function(code) emit( 'stop', code ) );
+        proc.on( 'message', function(e) trace(e) );
+        proc.on( 'error', function(e) {
             trace(e); //TODO
         });
-    }
 
-    public function stop() {
-        if( active ) {
-            //active = false;
-			try {
-				process.disconnect();
-                try process.kill() catch(e:Dynamic) trace(e);
-				process = null;
-			} catch(e:Dynamic) {
-				trace(e);
-			}
-            //process.stdout.end();
-            //try process.kill() catch(e:Dynamic) trace(e);
-            //try process = null catch(e:Dynamic) trace(e);
-            //onStop(0);
-        }
-    }
+		running = true;
 
-    public function dispose() {
-        stop();
-    }
+		/*
+		haxe.Timer.delay(function(){
+			trace(proc.connected);
+		},500);
+		*/
 
-    function handleData(e) {
-        onData( e.toString() );
-    }
+		emit( 'start' );
+	}
 
-    function handleError(e) {
-        onData( e.toString() );
-        //onError( e.toString() );
-    }
+	public function stop() {
 
-    function handleExit( code : Int ) {
-        trace(code);
-        active = false;
-        onStop( code );
-    }
+		trace("STOP SERVER");
+
+		if( proc != null ) {
+			proc.removeAllListeners();
+			try proc.kill() catch(e:Dynamic) trace(e);
+			proc = null;
+			emit( 'stop', 0 );
+		}
+		running = false;
+	}
 
 }

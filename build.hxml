@@ -5,10 +5,12 @@
 -cp src
 -lib om.core
 -lib om.io
+-lib om.haxe
+-lib om.atom
 #-lib om.term
--cp ../../lib/om.atom/src
-#-cp ../../lib/om.core/src
--cp ../../lib/om.haxe/src
-#-cp ../../lib/om.io/src
--cp ../../lib/om.term/src
-xxx.atom.IDE
+#-cp ../../lib/om.atom/src
+#-cp ../../lib/om.haxe/src
+#-cp ../../lib/om.term/src
+xxx.IDE
+-D hxnodejs_no_version_warning
+#-cmd cp -r res/task lib/

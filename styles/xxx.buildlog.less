@@ -1,43 +1,206 @@
 
 @import "xxx";
 
-.haxe-buildlog {
+.xxx-build {
 
+    display:table;
+
+    width: 100%;
     height: 100%;
-    min-height: 100%;
-	max-height: 100%;
-    min-width: 200px;
-    overflow-y: scroll;
-    //padding: 0;
-    padding-top: 0px;
-    padding-bottom: 2px;
-
-    font-family: @font-family-mono;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
 
     border-left: 1px solid @pane-item-border-color;
 
+    font-family: @font-family-mono;
+
     ol.messages {
 
-        overflow:auto;
-    	white-space:pre-wrap;
-        line-height: normal;
         margin: 0;
-        padding: 0 0 0 0;
-        list-style-type: none;
+        padding: 0;
+        overflow: auto;
+        white-space: pre-wrap;
+
+        //border-bottom: 1px solid @pane-item-border-color;
 
         li.message {
 
-            padding: 3px 0px 2px 6px;
+            list-style-type: none;
+            background-clip: content-box;
+            line-height: normal;
+            vertical-align: middle;
+
+            padding-top: 1px;
+            padding-bottom: 2px;
+            padding-left: 6px;
+
+            //border-bottom: 1px solid @pane-item-border-color;
+
+            &.info {
+                color: @text-color-info;
+            }
+            &.success {
+                color: @text-color-success;
+            }
+            &.warning {
+                color: @text-color-warning;
+            }
+            &.error {
+
+                //background: @background-color-error;
+                color: @text-color-error;
+
+                .index {
+                    display: none;
+                }
+
+                //.position {}
+
+                .path:after {
+                    content:":";
+                }
+                .line:after {
+                    content:": ";
+                }
+                .start:after {
+                    content:"-";
+                }
+                .end:after {
+                    content:" : ";
+                }
+                .content {
+                }
+            }
+
+        }
+    }
+}
+    /*
+    width: 100%;
+    height: 100%;
+    padding: 0;
+
+    font-family: @font-family-mono;
+    border-left: 1px solid @pane-item-border-color;
+
+    ol {
+
+        margin: 0;
+        padding: 0;
+
+        li {
+
+            list-style-type: none;
+            background-clip: content-box;
+            line-height: normal;
+            vertical-align: middle;
+
+            padding-top: 2px;
+            padding-bottom: 2px;
+            padding-left: 6px;
+
+            border-bottom: 1px solid @pane-item-border-color;
+
+            &.info {
+                color: @text-color-info;
+            }
+            &.success {
+                color: @text-color-success;
+            }
+            &.warning {
+                color: @text-color-warning;
+            }
+            &.error {
+                //background: @background-color-error;
+                color: @text-color-error;
+            }
+
+            .index {
+                display: none;
+            }
+
+            //.position {}
+
+            .path:after {
+                content:":";
+            }
+
+            .line:after {
+                content:": ";
+            }
+
+            .start:after {
+                content:"-";
+            }
+            .end:after {
+                content:" : ";
+            }
+
+            .content {
+            }
+        }
+
+    }
+    */
+
+    //////////////////////////////////////////////////////////////////////////////////
+
+    /*
+    width: 100%;
+    height: 100%;
+    min-width: 100px;
+    max-width: 100%;
+	//max-height: 75vh;
+    padding: 0 0 0 0;
+    //line-height: 12px;
+    overflow-y: auto;
+
+    font-family: @font-family-mono;
+
+    //border-left: 1px solid @pane-item-border-color;
+
+    ol.messages {
+
+        margin: 0;
+        padding: 0;
+        overflow: auto;
+        white-space: pre-wrap;
+        //line-height: normal;
+
+        background: @tool-panel-background-color;
+
+        li.message {
+
+            list-style-type: none;
+
+            overflow-x: hidden;
+
+            //padding: 3px 0px 2px 6px;
 
             &:before {
                 //content: "";
             }
 
             &:not(:last-child) {
-                border-bottom: 1px dotted @pane-item-border-color;
+                //border-bottom: 1px dotted @pane-item-border-color;
             }
             &:last-child {
                 border-bottom: 1px solid @pane-item-border-color;
+            }
+
+            .index {
+                //position: relative;
+                //top: 0;
+            //left: 0;
+                //top: 2px;
+                //left: 2px;
+                //padding: 3px 6px 2px 6px;
+                //float: left;
+                //display: inline-block;
+                //margin-right: 6px;
+                color: @text-color-subtle;
+                //background: @app-background-color;
             }
 
             i.icon::before {
@@ -55,19 +218,34 @@
             }
 
             .content {
-                //display: inline-block;
-                //padding: 1px 2px 0px 4px;
-                -webkit-user-select: text !important;
-            }
 
-            &.error {
-                //background: @background-color-error;
-                //color: @text-color-highlight;// @text-color-error;
-                color: @text-color-error;
-                a {
+                //padding: 3px 6px 2px 6px;
+
+                position: relative;
+                top: 0;
+                left: 0;
+
+                display: inline;
+                //padding: 1px 2px 0px 4px;
+                //white-space: nowrap;
+                //overflow: hidden;
+
+                user-select: text !important;
+                -webkit-user-select: text !important;
+
+                color: @text-color-highlight;
+
+                &.error {
+                    //background: @background-color-error;
+                    //color: @text-color-highlight;// @text-color-error;
                     color: @text-color-error;
+                    a {
+                        color: @text-color-error;
+                    }
                 }
             }
+
         }
     }
 }
+*/

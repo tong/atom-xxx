@@ -1,96 +1,65 @@
 package xxx;
 
-import js.Node;
-import js.node.ChildProcess;
 import js.node.ChildProcess.spawn;
-import js.node.child_process.ChildProcess;
+import js.node.child_process.ChildProcess as Process;
+import atom.File;
 
-/*
-class BuildError {
+using StringTools;
+using haxe.io.Path;
 
-    public var message : String;
-    public var file : String;
-    public var line : Int;
-    public var start : Int;
-    public var end : Int;
+class Build extends atom.Emitter {
 
-    @:allow(xxx.Build) function new( message : String, file : String, line : Int, start : Int, end : Int ) {
-        this.message = message;
-        this.file = file;
-        this.line = line;
-        this.start = start;
-        this.end = end;
+	public var hxml(default,null) : File;
+    public var running(default,null) : Bool;
+    //public var time(default,null) : Float;
+
+	var proc : Process;
+
+	public function new() {
+		super();
+		running = false;
     }
 
-    public function toString() {
-    }
-}
-*/
+	public function select( hxml : String ) {
 
-class Build {
+		if( this.hxml != null && hxml == this.hxml.getPath() )
+			return;
 
-    public var exe(default,null) : String;
-    public var active(default,null) = false;
+		//Atrom.project();
 
-    var process : ChildProcess;
-    var onError : String->Void;
-    var onResult : String->Void;
-    var onEnd : Int->Void;
+		emit( 'hxml_select', this.hxml = new File( hxml ) );
+	}
 
-    public function new( exe = 'haxe' ) {
-        this.exe = exe;
-    }
+	public function start( verbose = false ) {
 
-    public function start( args : Array<String>, ?opts : ChildProcessSpawnOptions, onError : String->Void, onResult : String->Void, onEnd : Int->Void ) {
+		if( hxml == null )
+			throw 'no hxml file selected';
 
-        if( active )
-            throw 'build already active';
+		var cwd = hxml.getParent().getPath();
 
-        if( opts == null ) opts = {};
+		var args = new Array<String>();
+		if( verbose ) args.push( '-v' );
+		args.push( hxml.getBaseName() );
 
-        this.onError = onError;
-        this.onResult = onResult;
-        this.onEnd = onEnd;
+		proc = spawn( 'haxe', args, { cwd : cwd } );
+        proc.stdout.on( 'data', function(e) emit( 'message', e.toString() ) );
+        proc.stderr.on( 'data', function(e) emit( 'error', e.toString() ) );
+        proc.on( 'exit', function(code) emit( 'end', code ) );
+        proc.on( 'message', function(e) trace(e) );
+        proc.on( 'error', function(e) {
+            trace(e); //TODO
+        });
 
-        active = true;
+		running = true;
 
-        process = spawn( exe, args, opts );
-        process.stdout.on( 'data', handleData );
-        process.stderr.on( 'data', handleError );
-        process.on( 'close', handleClose );
-    }
+		emit( 'start' );
+	}
 
-    public function cancel() {
-        active = false;
-        killProcess();
-    }
-
-    function handleData(e) {
-        onResult( e.toString() );
-    }
-
-    function handleError(e) {
-        onError( e.toString() );
-    }
-
-    function handleClose( code : Int ) {
-        process = null;
-        switch code {
-        case 0:
-        default:
-        }
-        onEnd( code );
-    }
-
-    function killProcess() {
-        if( process != null ) {
-			try {
-                process.kill();
-                process = null;
-            } catch(e:Dynamic) {
-                trace(e);
-            }
+	public function stop() {
+		if( proc != null ) {
+			try proc.kill() catch(e:Dynamic) trace(e);
 		}
-    }
+		running = false;
+	}
 
 }

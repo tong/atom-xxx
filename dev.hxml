@@ -1,3 +1,4 @@
+#--connect 5500
 build.hxml
 -debug
 -D dev
