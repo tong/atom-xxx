@@ -28,9 +28,11 @@ class ServerLogView implements atom.Disposable {
 
 		panel = Atom.workspace.addRightPanel( { item: element, visible: false } );
 
+		/*
 		IDE.build.on( 'start', function(msg){
 			clear();
 		});
+		*/
 
 		var isComplete = false;
 
@@ -133,31 +135,26 @@ class ServerLogView implements atom.Disposable {
 		element.addEventListener( 'click', handleClick, false  );
 	}
 
-    public inline function isVisible() : Bool {
-        return panel.isVisible();
-    }
+	public function dispose() {
+		element.removeEventListener( 'click', handleClick );
+		panel.destroy();
+	}
 
-    public inline function show() {
+    public inline function isVisible()
+		return panel.isVisible();
+
+    public inline function show()
         panel.show();
-    }
 
-    public inline function hide() {
+    public inline function hide()
         panel.hide();
-        //Atom.views.getView( Atom.workspace ).focus();
-    }
 
-    public inline function toggle() {
+    public inline function toggle()
         isVisible() ? hide() : show();
-    }
 
 	public function clear() {
 		while( messages.firstChild != null )
 			messages.removeChild( messages.firstChild );
-	}
-
-	public function dispose() {
-		element.removeEventListener( 'click', handleClick );
-		panel.destroy();
 	}
 
 	public inline function scrollToBottom() {

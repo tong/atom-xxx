@@ -41,10 +41,11 @@ class StatusbarView implements atom.Disposable {
         meta.classList.add( 'meta' );
         element.appendChild( meta );
 
-		//IDE.project.on('dirty');
-
+		if( IDE.server.running ) {
+			tooltip = tooltips.add( icon, { title: IDE.server.host + ':' + IDE.server.port } );
+			//icon.title = IDE.server.host + ':' + IDE.server.port;
+		}
 		IDE.server.onStart( function(){
-			//trace("SAERVER STARZRTET");
 			icon.classList.remove( 'off' );
 			//meta.textContent = 'Server started';
 			tooltip = tooltips.add( icon, { title: IDE.server.host + ':' + IDE.server.port } );
@@ -60,43 +61,43 @@ class StatusbarView implements atom.Disposable {
 			if( tooltip != null ) tooltip.dispose();
 		});
 
-		if( IDE.server.running ) {
-			tooltip = tooltips.add( icon, { title: IDE.server.host + ':' + IDE.server.port } );
-			//icon.title = IDE.server.host + ':' + IDE.server.port;
+		if( IDE.hxml != null ) {
+			changeHxml( IDE.hxml );
 		}
-
-		var timeBuildStart : Float = null;
-
-		IDE.build.on( 'start', function(_){
-			//element.classList.add( 'active' );
-			changeStatus( 'active' );
-			timeBuildStart = Time.now();
+		IDE.onSelectHxml( function(hxml){
+			changeHxml( hxml );
 		});
-		IDE.build.on( 'message', function(msg){
-			meta.textContent = msg;
-		});
-		IDE.build.on( 'error', function(err){
-			//trace(err);
-			//element.classList.add( 'error' );
-		});
-		IDE.build.on( 'end', function(code){
+		IDE.onBuild(function(build){
 
-			if( code == 0 ) {
-				changeStatus( 'success' );
-			} else {
+			changeHxml( build.hxml );
+
+			var timeBuildStart : Float = null;
+
+			build.onStart( function(){
+				timeBuildStart = Time.now();
+				changeStatus( 'active' );
+			});
+			build.onMessage( function(msg){
+				//meta.textContent = msg;
+			});
+			build.onError( function(err){
+				//info.textContent = err;
 				changeStatus( 'error' );
-			}
+			});
+			build.onEnd( function(code){
 
-			var time = (Time.now() - timeBuildStart)/1000;
-			var timeStr = Std.string( time );
-			var cpos = timeStr.indexOf('.');
-			meta.textContent = timeStr.substring( 0, cpos ) + timeStr.substring( cpos, 3 ) + 's';
+				if( code == 0 ) {
+					changeStatus( 'success' );
+				} else {
+					changeStatus( 'error' );
+				}
+
+				var time = (Time.now() - timeBuildStart)/1000;
+				var timeStr = Std.string( time );
+				var cpos = timeStr.indexOf('.');
+				meta.textContent = timeStr.substring( 0, cpos ) + timeStr.substring( cpos, 3 ) + 's';
+			});
 		});
-
-		//IDE.on('hxml_list_changed');
-
-		IDE.build.on( 'hxml_select', changeHxml );
-		changeHxml( IDE.build.hxml );
 
 		info.addEventListener( 'click', handleClickInfo, false );
 	}
@@ -132,8 +133,10 @@ class StatusbarView implements atom.Disposable {
                 info.classList.remove( this.status );
             }
 			this.status = status;
-            icon.classList.add( status );
-            info.classList.add( status );
+			if( status != null ) {
+				icon.classList.add( status );
+				info.classList.add( status );
+			}
 		}
 		meta.textContent = '';
 	}
@@ -145,9 +148,9 @@ class StatusbarView implements atom.Disposable {
 
 	function handleClickInfo(e) {
         if( e.ctrlKey ) {
-            IDE.build.start();
+            IDE.build();
         } else {
-            if( IDE.build.hxml != null ) workspace.open( IDE.build.hxml.getPath() );
+            if( IDE.hxml != null ) workspace.open( IDE.hxml.getPath() );
         }
     }
 }

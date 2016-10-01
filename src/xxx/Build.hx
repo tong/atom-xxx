@@ -9,17 +9,49 @@ using haxe.io.Path;
 
 class Build extends atom.Emitter {
 
+	public var haxe(default,null) : String;
 	public var hxml(default,null) : File;
-    public var running(default,null) : Bool;
+    public var active(default,null) : Bool;
     //public var time(default,null) : Float;
 
 	var proc : Process;
 
-	public function new() {
+	public function new( hxml : File, haxe = 'haxe' ) {
 		super();
-		running = false;
+		this.hxml = hxml;
+		this.haxe = haxe;
+		active = false;
     }
 
+	public inline function onStart( h : Void->Void ) on( 'start', h );
+	public inline function onMessage( h : String->Void ) on( 'message', h );
+	public inline function onError( h : String->Void ) on( 'error', h );
+	public inline function onEnd( h : Int->Void ) on( 'end', h );
+
+	public function start( verbose = false ) {
+
+
+		var cwd = hxml.getParent().getPath();
+
+		var args = new Array<String>();
+		if( verbose ) args.push( '-v' );
+		args.push( hxml.getBaseName() );
+
+		proc = spawn( haxe, args, { cwd : cwd } );
+        proc.stdout.on( 'data', function(e) emit( 'message', e.toString() ) );
+        proc.stderr.on( 'data', function(e) emit( 'error', e.toString() ) );
+        proc.on( 'exit', function(code) emit( 'end', code ) );
+        proc.on( 'message', function(e) trace(e) );
+        proc.on( 'error', function(e) {
+            trace(e); //TODO
+        });
+
+		active = true;
+
+		emit( 'start' );
+	}
+
+	/*
 	public function select( hxml : String ) {
 
 		if( this.hxml != null && hxml == this.hxml.getPath() )
@@ -41,7 +73,7 @@ class Build extends atom.Emitter {
 		if( verbose ) args.push( '-v' );
 		args.push( hxml.getBaseName() );
 
-		proc = spawn( 'haxe', args, { cwd : cwd } );
+		proc = spawn( path, args, { cwd : cwd } );
         proc.stdout.on( 'data', function(e) emit( 'message', e.toString() ) );
         proc.stderr.on( 'data', function(e) emit( 'error', e.toString() ) );
         proc.on( 'exit', function(code) emit( 'end', code ) );
@@ -50,7 +82,7 @@ class Build extends atom.Emitter {
             trace(e); //TODO
         });
 
-		running = true;
+		active = true;
 
 		emit( 'start' );
 	}
@@ -59,7 +91,8 @@ class Build extends atom.Emitter {
 		if( proc != null ) {
 			try proc.kill() catch(e:Dynamic) trace(e);
 		}
-		running = false;
+		active = false;
 	}
+	*/
 
 }
