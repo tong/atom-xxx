@@ -19,17 +19,11 @@ using haxe.io.Path;
 class IDE {
 
 	public static var server(default,null) : Server;
-	//public static var build(default,null) : Build;
-	//public static var build(default,null) : BuildManager;
 	public static var hxml(default,null) : File;
 	public static var hxmlFiles(default,null) : Array<String>;
 
 	static var disposables : CompositeDisposable;
 	static var emitter : Emitter;
-
-	//static var buildView : BuildView;
-	//static var cmdStartServer : Disposable;
-	//static var cmdStartServer : Disposable;
 
 	static function activate( state ) {
 
@@ -63,9 +57,6 @@ class IDE {
 			//Atom.commands.add( 'atom-workspace', 'haxe:start-server', function(e) server.start() );
 		});
 
-		//build = new BuildManager();
-
-		//var serverLogView = new xxx.view.ServerLogView();
 		new xxx.view.ServerLogView();
 
 		searchHxmlFiles( function( found:Array<String> ) {
@@ -81,21 +72,18 @@ class IDE {
 					break;
 				}
 				selectHxml( exists ? state.hxml : found[0] );
-				//build.selectHxml( exists ? state.hxml : found[0] );
 			} else {
 				selectHxml( found[0] );
 			}
 		});
 
 		Atom.commands.add( 'atom-workspace', 'haxe:build', function(e) {
-
 			var treeViewFile = getTreeViewFile();
 	        if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
 	            if( hxml != null && treeViewFile != hxml.getPath() ) {
 	                selectHxml( treeViewFile );
 	            }
 	        }
-
 			build();
 		});
 
