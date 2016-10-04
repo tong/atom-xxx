@@ -162,11 +162,11 @@ class ServerLogView implements atom.Disposable {
 	}
 
 	function handleClick(e) {
-        //if( e.ctrlKey ) {
-            e.preventDefault();
-            e.stopPropagation();
+        if( e.ctrlKey ) {
+            //e.preventDefault();
+            //e.stopPropagation();
             //clear();
 			toggle();
-        //}
+        }
     }
 }

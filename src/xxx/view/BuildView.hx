@@ -25,10 +25,10 @@ class BuildView implements atom.Disposable {
 	public function new() {
 
         element = document.createDivElement();
-        element.classList.add( 'xxx-build', 'inline-block' );
+        element.classList.add( 'xxx-build', 'resizer' );
 
 		messages = document.createOListElement();
-		messages.classList.add( 'messages','scroller' );
+		messages.classList.add( 'messages', 'scroller' );
 		element.appendChild( messages );
 
 		panel = workspace.addBottomPanel( { item: element, visible: true } );
@@ -40,10 +40,13 @@ class BuildView implements atom.Disposable {
 			clear();
 
 			build.onMessage( function(msg){
+
 				var m = document.createLIElement();
 				m.classList.add( 'message' );
 				m.textContent = msg;
 				messages.appendChild(m);
+
+				//scrollToBottom();
 			});
 
 			build.onError( function(str){
@@ -99,84 +102,11 @@ class BuildView implements atom.Disposable {
 						//openFile( err );
 
 					messages.appendChild( msg );
-				}
 
+					//scrollToBottom();
+				}
 			});
 		});
-
-		/*
-		IDE.build.on( 'start', function(msg){
-			clear();
-		});
-
-		IDE.build.on( 'end', function(msg){
-			if( messages.children.length == 0 )
-				hide();
-		});
-
-		IDE.build.on( 'message', function(msg){
-			var m = document.createLIElement();
-			m.classList.add( 'message' );
-			m.textContent = msg;
-			messages.appendChild(m);
-		});
-
-		IDE.build.on( 'error', function(str:String){
-
-			str = str.trim();
-			//trace(str);
-
-			var err = om.haxe.ErrorMessage.parse( str );
-			if( err == null ) {
-				//TODO
-				trace('??????????????');
-				var m = document.createLIElement();
-				m.classList.add( 'message', 'error' );
-				m.textContent = str;
-				messages.appendChild(m);
-
-			} else {
-
-				var msg = document.createLIElement();
-				msg.classList.add( 'message', 'error' );
-
-				var path = document.createSpanElement();
-				path.classList.add( 'path' );
-				path.textContent = err.path;
-				msg.appendChild( path );
-
-				var line = document.createSpanElement();
-				line.classList.add( 'line' );
-				line.textContent = Std.string( err.line );
-				msg.appendChild( line );
-
-				if( err.characters != null ) {
-
-					var start = document.createSpanElement();
-					start.classList.add( 'start' );
-					start.textContent = Std.string( err.characters.start );
-					msg.appendChild( start );
-
-					var end = document.createSpanElement();
-					end.classList.add( 'end' );
-					end.textContent = Std.string( err.characters.end );
-					msg.appendChild( end );
-				}
-
-				var content = document.createSpanElement();
-				content.classList.add( 'content' );
-				content.textContent = err.content;
-				msg.appendChild( content );
-
-				msg.onclick = function() {
-					//TODO
-				}
-					//openFile( err );
-
-				messages.appendChild( msg );
-			}
-		});
-		*/
 
 		element.addEventListener( 'click', handleClick, false );
 	}
@@ -194,6 +124,12 @@ class BuildView implements atom.Disposable {
 
     public inline function toggle() {
         isVisible() ? hide() : show();
+    }
+
+	public inline function scrollToBottom() {
+        //messages.scrollTop = 200; //messages.scrollHeight;
+        //element.scrollTop = messages.scrollHeight;
+        //element.scrollTop = 200;
     }
 
 	public function clear() {
