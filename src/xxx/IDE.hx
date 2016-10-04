@@ -9,9 +9,15 @@ import atom.File;
 import Atom.commands;
 import Atom.notifications;
 import xxx.view.BuildView;
+import xxx.view.ServerLogView;
 
 using StringTools;
 using haxe.io.Path;
+
+typedef IDEState = {
+	var hxml : String;
+	var serverlog : Bool;
+}
 
 @:keep
 @:expose
@@ -25,7 +31,9 @@ class IDE {
 	static var disposables : CompositeDisposable;
 	static var emitter : Emitter;
 
-	static function activate( state ) {
+	static var serverlog : ServerLogView;
+
+	static function activate( state : IDEState ) {
 
 		trace( 'Atom-xxx' );
 		trace( state );
@@ -56,8 +64,6 @@ class IDE {
 			cmdStartServer = commands.add( 'atom-workspace', 'haxe:start-server', function(e) server.start() );
 			//Atom.commands.add( 'atom-workspace', 'haxe:start-server', function(e) server.start() );
 		});
-
-		new xxx.view.ServerLogView();
 
 		searchHxmlFiles( function( found:Array<String> ) {
 
@@ -93,16 +99,31 @@ class IDE {
 		});
 		*/
 
+		serverlog = new ServerLogView();
+
 		Timer.delay( function(){
-			trace( 'Starting haxe server: '+server.port );
-			server.start();
+
+			om.net.PortUtil.isPortTaken( server.port, function(taken) {
+				if( taken ) {
+					trace( 'Port ${server.port} already in use' );
+				} else {
+
+					trace( 'Starting haxe server: '+server.port );
+
+					server.start();
+
+					if( state != null && state.serverlog ) {
+						serverlog.show();
+					}
+				}
+			});
 		}, getConfig( 'haxe_server_startdelay' ) * 1000 );
 	}
 
-	static function serialize() {
+	static function serialize() : IDEState {
 		return {
-            //hxml: (build.hxml != null) ? build.hxml.getPath() : null,
-			//server: server.running
+            hxml: (hxml != null) ? hxml.getPath() : null,
+			serverlog: serverlog.isVisible()
         };
     }
 
@@ -149,12 +170,6 @@ class IDE {
 			}
 		}
 		callback( found );
-
-		/*
-		//var w = om.Worker.fromScript( om.macro.File.getContent('res/task/find-hxml.js') );
-		var w = new om.Worker('atom://xxx/lib/task/find-hxml.js' );
-		w.postMessage( paths );
-		*/
 
 		/*
 		var found = new Array<String>();
@@ -233,9 +248,22 @@ class IDE {
     }
 
 	static function provideAutoCompletion() {
-		//return new Completion();
+		//return new CompletionProvider();
 		return null;
 	}
+
+	/*
+	static function provideFileIcons() {
+		return {
+			iconClassForPath: function(path){
+				trace(path);
+			},
+			onWillDeactivate: function() {
+
+			}
+		};
+	}
+	*/
 
 	static function provideService() {
 		return null;
