@@ -1,10 +1,15 @@
 -js lib/xxx.js
 -cp src
 -lib hxatom
--lib om.io
 -lib om.haxe
-#-lib markdown
-#-lib haxeparser
+-lib om.io
+-lib om.net
 xxx.IDE
 -D hxnodejs_no_version_warning
-#-cmd cp -r res/task lib/
+
+-debug
+
+#-lib closure
+#-dce full
+#--no-traces
+#-D closure_overwrite

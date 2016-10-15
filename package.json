@@ -1,6 +1,6 @@
 {
     "name": "xxx",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "description": "Sex with haxe",
     "keywords": ["haxe","ide","xxx"],
     "repository": "https://github.com/tong/atom-xxx",
@@ -9,34 +9,39 @@
         "atom": ">=1.10.2 .0 <2.0.0"
     },
     "dependencies": {
-        "language-haxe": "^0.4.3"
+        "language-haxe": "^0.5.2"
     },
     "main": "./lib/xxx",
     "configSchema": {
-        "haxe_path": {
-            "title": "Haxe Path",
-            "description": "Path to your haxe executable",
-            "type": "string",
-            "default": "haxe"
-        },
-        "haxe_server_port": {
-            "title": "Haxe Server Port",
-            "description": "The port number the haxe server will listen on.",
-            "type": "integer",
-            "default": 5500
-        },
-        "haxe_server_startdelay":{
-            "title": "Haxe Server Activation Delay",
-            "description": "The delay in seconds before starting the haxe server.",
-            "type": "integer",
-            "minimum": 0,
-            "default": 2
-        },
-        "haxe_server_autostart":{
-            "title": "Haxe Server Autostart",
-            "description": "Automatically start a haxe server if a hxml file specifies the --connect parameter.",
-            "type": "boolean",
-            "default": true
+        "Haxe Server": {
+            "type": "object",
+            "properties": {
+                "haxe_path": {
+                    "title": "Haxe Path",
+                    "description": "Path to your haxe executable",
+                    "type": "string",
+                    "default": "haxe"
+                },
+                "haxe_server_port": {
+                    "title": "Haxe Server Port",
+                    "description": "The port number the haxe server will listen on.",
+                    "type": "integer",
+                    "default": 5500
+                },
+                "haxe_server_startdelay":{
+                    "title": "Haxe Server Activation Delay",
+                    "description": "The delay in seconds before starting the haxe server.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 2
+                },
+                "haxe_server_autostart":{
+                    "title": "Haxe Server Autostart",
+                    "description": "Automatically start a haxe server if a hxml file specifies the --connect parameter.",
+                    "type": "boolean",
+                    "default": true
+                }
+            }
         }
     },
     "consumedServices": {

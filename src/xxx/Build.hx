@@ -39,7 +39,15 @@ class Build extends atom.Emitter {
 
 		proc = spawn( haxe, args, { cwd : cwd } );
         proc.stdout.on( 'data', function(e) emit( 'message', e.toString() ) );
-        proc.stderr.on( 'data', function(e) emit( 'error', e.toString() ) );
+        proc.stderr.on( 'data', function(e) {
+			var str : String = e.toString();
+			for( line in str.split( '\n' ) ) {
+				line = line.trim();
+				if( line.length == 0 )
+					continue;
+				emit( 'error', line );
+			}
+		} );
         proc.on( 'exit', function(code) emit( 'end', code ) );
         proc.on( 'message', function(e) trace(e) );
         proc.on( 'error', function(e) {

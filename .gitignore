@@ -1,6 +1,4 @@
 _*
-cache/
-exp/
-styles/_*
+data/
+test/
 *.zip
-TODO*

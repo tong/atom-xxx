@@ -41,6 +41,7 @@ class StatusbarView implements atom.Disposable {
         meta.classList.add( 'meta' );
         element.appendChild( meta );
 
+		/*
 		if( IDE.server.running ) {
 			tooltip = tooltips.add( icon, { title: IDE.server.host + ':' + IDE.server.port } );
 			//icon.title = IDE.server.host + ':' + IDE.server.port;
@@ -57,21 +58,21 @@ class StatusbarView implements atom.Disposable {
 		});
 		IDE.server.onMessage( function(msg){
 			meta.textContent = msg;
-			//meta.textContent = 'Server stopped';
+			//meta.textCon tent = 'Server stopped';
 			if( tooltip != null ) tooltip.dispose();
 		});
+		*/
 
-		if( IDE.hxml != null ) {
-			changeHxml( IDE.hxml );
-		}
 		IDE.onSelectHxml( function(hxml){
 			changeHxml( hxml );
 		});
+
 		IDE.onBuild(function(build){
 
 			changeHxml( build.hxml );
 
 			var timeBuildStart : Float = null;
+			var numErrors = 0;
 
 			build.onStart( function(){
 				timeBuildStart = Time.now();
@@ -81,23 +82,32 @@ class StatusbarView implements atom.Disposable {
 				//meta.textContent = msg;
 			});
 			build.onError( function(err){
-				//info.textContent = err;
+				//trace(err);
+				numErrors++;
 				changeStatus( 'error' );
+				//meta.textContent = ''+err;
 			});
 			build.onEnd( function(code){
 
 				if( code == 0 ) {
+
 					changeStatus( 'success' );
+
+					var time = (Time.now() - timeBuildStart)/1000;
+					var timeStr = Std.string( time );
+					var cpos = timeStr.indexOf('.');
+					meta.textContent = timeStr.substring( 0, cpos ) + timeStr.substring( cpos, 3 ) + 's';
+
 				} else {
 					changeStatus( 'error' );
+					meta.textContent = numErrors+' errors';
 				}
-
-				var time = (Time.now() - timeBuildStart)/1000;
-				var timeStr = Std.string( time );
-				var cpos = timeStr.indexOf('.');
-				meta.textContent = timeStr.substring( 0, cpos ) + timeStr.substring( cpos, 3 ) + 's';
 			});
 		});
+
+		if( IDE.hxml != null ) {
+			changeHxml( IDE.hxml );
+		}
 
 		info.addEventListener( 'click', handleClickInfo, false );
 	}
@@ -138,7 +148,7 @@ class StatusbarView implements atom.Disposable {
 				info.classList.add( status );
 			}
 		}
-		meta.textContent = '';
+		//meta.textContent = '';
 	}
 
 	public function dispose() {

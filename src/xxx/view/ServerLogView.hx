@@ -36,6 +36,7 @@ class ServerLogView implements atom.Disposable {
 
 		var isComplete = false;
 
+		/*
 		IDE.server.onMessage( function(msg){
 
 			//var prevFirstWord : string = null;
@@ -63,7 +64,7 @@ class ServerLogView implements atom.Disposable {
 				if( messages.children.length == maxMessages ) {
 	                messages.removeChild( messages.firstChild );
 	            }
-				*/
+				* /
 
 				var firstWord = line.substr( 0, line.indexOf(' ') ).toLowerCase();
 				if( firstWord == '>' ) firstWord = 'error';
@@ -133,6 +134,7 @@ class ServerLogView implements atom.Disposable {
 		Atom.commands.add( 'atom-workspace', 'haxe:toggle-server-log', function(e) toggle() );
 
 		element.addEventListener( 'click', handleClick, false  );
+		*/
 	}
 
 	public function dispose() {
