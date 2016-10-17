@@ -41,6 +41,47 @@ class StatusbarView implements atom.Disposable {
         meta.classList.add( 'meta' );
         element.appendChild( meta );
 
+		IDE.onSelectHxml( function(hxml){
+			changeHxml( hxml );
+		});
+
+		IDE.onBuild( function(build){
+
+			var timeBuildStart : Float = null;
+			var numErrors = 0;
+
+			build.onStart( function(){
+				timeBuildStart = Time.now();
+				changeStatus( 'active' );
+			});
+			build.onMessage( function(msg){
+				//meta.textContent = msg;
+			});
+			build.onError( function(err){
+				//trace(err);
+				numErrors++;
+				changeStatus( 'error' );
+				//meta.textContent = ''+err;
+			});
+			build.onEnd( function(code){
+
+				if( code == 0 ) {
+
+					changeStatus( 'success' );
+
+					var time = (Time.now() - timeBuildStart)/1000;
+					var timeStr = Std.string( time );
+					var cpos = timeStr.indexOf('.');
+					meta.textContent = timeStr.substring( 0, cpos ) + timeStr.substring( cpos, 3 ) + 's';
+
+				} else {
+					changeStatus( 'error' );
+					meta.textContent = '($numErrors)';
+				}
+			});
+
+		});
+
 		/*
 		if( IDE.server.running ) {
 			tooltip = tooltips.add( icon, { title: IDE.server.host + ':' + IDE.server.port } );
@@ -63,6 +104,7 @@ class StatusbarView implements atom.Disposable {
 		});
 		*/
 
+		/*
 		IDE.onSelectHxml( function(hxml){
 			changeHxml( hxml );
 		});
@@ -110,6 +152,7 @@ class StatusbarView implements atom.Disposable {
 		}
 
 		info.addEventListener( 'click', handleClickInfo, false );
+		*/
 	}
 
 	function changeHxml( hxml : File ) {
@@ -158,9 +201,9 @@ class StatusbarView implements atom.Disposable {
 
 	function handleClickInfo(e) {
         if( e.ctrlKey ) {
-            IDE.build();
+//            IDE.build();
         } else {
-            if( IDE.hxml != null ) workspace.open( IDE.hxml.getPath() );
+//            if( IDE.hxml != null ) workspace.open( IDE.hxml.getPath() );
         }
     }
 }

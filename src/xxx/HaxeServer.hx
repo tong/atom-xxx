@@ -9,7 +9,7 @@ import js.node.stream.Readable;
 
 using StringTools;
 
-class LanguageServer {
+class HaxeServer {
 
 	public var haxePath(default,null) : String;
 	public var verbose : Bool;
@@ -17,16 +17,19 @@ class LanguageServer {
 	var proc : Process;
 	var buffer : MessageBuffer;
 	var nextMessageLength : Int;
-	var currentRequest : DisplayRequest;
-	var requestsHead:DisplayRequest;
-    var requestsTail:DisplayRequest;
+	var currentRequest : Request;
+	var requestsHead : Request;
+    var requestsTail : Request;
 
 	public function new( haxePath = 'haxe', verbose = true ) {
 		this.haxePath = haxePath;
 		this.verbose = verbose;
 	}
 
-	public function start( callback : Void->Void ) {
+	public inline function isActive() : Bool
+		return proc != null;
+
+	public function start() {
 
 		stop();
 
@@ -37,17 +40,18 @@ class LanguageServer {
 
 		// TODO
 		// HACK
-		var cwd = Atom.project.getPaths()[0];
-		if( sys.FileSystem.exists( '$cwd/src' ) ) cwd += '/src';
+		//var cwd = Atom.project.getPaths()[0];
+		//if( sys.FileSystem.exists( '$cwd/src' ) ) cwd += '/src';
 
-		proc = ChildProcess.spawn( haxePath, args, { cwd: cwd } );
+		//proc = ChildProcess.spawn( haxePath, args, { cwd: cwd } );
+		proc = ChildProcess.spawn( haxePath, args );
 		proc.on( ChildProcessEvent.Exit, handleExit );
 		proc.stderr.on( ReadableEvent.Data, handleData );
 		proc.stdout.on( ReadableEvent.Data, function(buf:Buffer) {
-			//console.debug( buf.toString() );
+			#if debug
+			console.debug( '%c'+buf.toString(), 'color:#F68712;' );
+			#end
         });
-
-		callback();
 	}
 
 	public function stop() {
@@ -64,11 +68,11 @@ class LanguageServer {
         requestsHead = requestsTail = currentRequest = null;
 	}
 
-	public function query( args : Array<String>, content : String, onResult : String->Void, onError : String->Void ) {
+	public function query( args : Array<String>, ?stdin : String, onMessage : String->Void, onResult : String->Void, onError : String->Void ) {
 
-		trace(args);
+		trace("### "+args);
 
-		var req = new DisplayRequest( args, content, onResult, onError );
+		var req = new Request( args, stdin, onMessage, onResult, onError );
 		if( requestsHead == null ) {
             requestsHead = requestsTail = req;
 		} else {
@@ -166,28 +170,28 @@ private class MessageBuffer {
     }
 }
 
-private class DisplayRequest {
+private class Request {
 
-	@:allow(xxx.LanguageServer) var prev : DisplayRequest;
-    @:allow(xxx.LanguageServer) var next : DisplayRequest;
+	@:allow(xxx.HaxeServer) var prev : Request;
+    @:allow(xxx.HaxeServer) var next : Request;
 
     var args : Array<String>;
     var stdin : String;
+	var onMessage : String->Void;
     var onResult : String->Void;
     var onError : String->Void;
 
-	public function new( args : Array<String>, stdin : String, onResult : String->Void, onError : String->Void ) {
+	public function new( args : Array<String>, stdin : String, onMessage : String->Void, onResult : String->Void, onError : String->Void ) {
         this.args = args;
         this.stdin = stdin;
+        this.onMessage = onMessage;
         this.onResult = onResult;
         this.onError = onError;
     }
 
 	public function prepareBody() : Buffer {
 
-        if( stdin != null )
-			args = args.concat( ['-D','display-stdin'] );
-		//args = args.concat( ['-D','display-details'] );
+        if( stdin != null ) args = args.concat( ['-D','display-stdin'] );
 
         var lbuf = new Buffer(4);
         var chunks = [lbuf];
@@ -225,7 +229,9 @@ private class DisplayRequest {
             switch line.fastCodeAt( 0 ) {
                 case 0x01: // print
                     var line = line.substring(1).replace( "\x01", "\n" );
-                    trace("Haxe print:\n" + line);
+                    //trace("Haxe print:\n" + line);
+					//onResult( line );
+					onMessage( line );
                 case 0x02: // error
                     hasError = true;
                 default:
@@ -247,11 +253,11 @@ private class DisplayRequest {
         }
 		*/
 		if( hasError ) {
-			onError( "Error from Haxe server: " + data );
-			return;
+			onError( data );
+		} else {
+			onResult( data );
 		}
 
-		onResult( data );
     }
 
 }

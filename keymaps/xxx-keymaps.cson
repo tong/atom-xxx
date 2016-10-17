@@ -1,4 +1,4 @@
 '.platform-darwin atom-workspace':
-    'cmd-b': 'haxe:build'
+    'cmd-b': 'xxx:build'
 '.platform-win32,.platform-linux atom-workspace':
-    'ctrl-b': 'haxe:build'
+    'ctrl-b': 'xxx:build'

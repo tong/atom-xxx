@@ -27,6 +27,11 @@ class AutoComplete {
 
         return new Promise( function(resolve,reject) {
 
+			//TODO really
+			if( IDE.hxml == null ) {
+				return resolve( null );
+			}
+
             var editor = req.editor;
 			var bufpos = req.bufferPosition;
 			var path = editor.getPath();
@@ -35,21 +40,24 @@ class AutoComplete {
 			var line = editor.lineTextForBufferRow( bufpos.row );
             var index = pretext.length;
 
+			//trace(":::: "+path );
+
             //HACK
 			/*
-            var rel = Atom.project.relativizePath( path );
-            var _cwd = rel[0];
-            var _path = rel[1];
-			var _pathParts = _path.split('/');
+			var rel = Atom.project.relativizePath( path );
+			var _cwd = rel[0];
+			var _path = rel[1];
+			var _pathParts = _path.split( '/' );
+			/*
 			//if( _pathParts[0] == 'src' ) {}
-			trace(_cwd,_path);
 			*/
+			//console.debug(_cwd,_path);
 
 			var extraArgs = new Array<String>();
-			if( IDE.hxml != null ) {
-				extraArgs.push( IDE.hxml.getPath());
-				//extraArgs.push( IDE.hxml.getParent().getPath() );
-			}
+
+			//TODO really
+			extraArgs.push( IDE.hxml.getPath() );
+
 
             switch req.prefix {
 
@@ -66,6 +74,7 @@ class AutoComplete {
 					var pkg = IMPORT_DECL.matched(1);
 
 					query( path, index, content, extraArgs,
+
 						function(xml:Xml){
 
 							var suggestions = new Array<Suggestion>();
@@ -212,6 +221,19 @@ class AutoComplete {
 			args = extraArgs.concat( args );
 		}
 
+		IDE.server.query( args, content,
+			function(msg){
+			},
+			function(result){
+				var xml = Xml.parse( result ).firstElement();
+				onResult( xml );
+			},
+			function(e){
+				onError(e);
+			}
+		);
+
+		/*
 		IDE.lang.query( args, content,
 			function(result){
 				var xml = Xml.parse( result ).firstElement();
@@ -221,6 +243,7 @@ class AutoComplete {
 				onError(e);
 			}
 		);
+		*/
 	}
 
     static function createFieldSuggestions( xml : Xml ) : Array<Suggestion> {

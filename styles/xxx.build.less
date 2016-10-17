@@ -3,7 +3,7 @@
 
 .xxx-build {
 
-    display:table;
+    display: table;
     width: 100%;
     overflow-y: auto;
 
@@ -19,10 +19,17 @@
             list-style-type: none;
             //white-space: pre;
 
-            padding: 2px 0 2px 5px;
+            padding: 2px 0 1px 6px;
+
+            cursor: default;
 
             &:not(:last-child) {
                 border-bottom: 1px solid @pane-item-border-color;
+            }
+
+            i {
+                color: @text-color-subtle;
+                margin-right: 6px;
             }
 
             &.info {
@@ -34,22 +41,36 @@
             &.warning {
                 color: @text-color-warning;
             }
+
             &.error {
 
                 //background: @background-color-error;
                 color: @text-color-error;
 
                 .index {
-                    display: none;
+                    //display: none;
                 }
 
                 //.position {}
 
+                .path, .line, .start, .end, .content {
+                    //color: @text-color-error;
+                }
+
+                .path, .line, .start, .end {
+                    cursor: pointer;
+                    &:hover {
+                        text-decoration: underline;
+                    }
+                }
+
                 .path:after {
                     content: ":";
                 }
-                .line:after {
-                    content: ": ";
+                .line {
+                    &:after {
+                        content: ": ";
+                    }
                 }
                 .start:after {
                     content: "-";
@@ -59,86 +80,12 @@
                 }
                 .content {
                 }
+
+                &.selected {
+                    color: @text-color-highlight;
+                    background: @background-color-error;
+                }
             }
         }
     }
 }
-
-/*
-.xxx-build {
-
-    display:table;
-
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow-y: auto;
-
-    //border-left: 1px solid @pane-item-border-color;
-
-    font-family: @font-family-mono;
-
-    ol.messages {
-
-        margin: 0;
-        padding: 0;
-        overflow: auto;
-        white-space: pre-wrap;
-
-        li.message {
-
-            list-style-type: none;
-            background-clip: content-box;
-            line-height: normal;
-            vertical-align: middle;
-
-            padding-top: 3px;
-            padding-bottom: 2px;
-            padding-left: 6px;
-
-            background: @pane-item-background-color;
-            &:not(:last-child) {
-                border-bottom: 1px solid @pane-item-border-color;
-            }
-
-            &.info {
-                color: @text-color-info;
-            }
-            &.success {
-                color: @text-color-success;
-            }
-            &.warning {
-                color: @text-color-warning;
-            }
-            &.error {
-
-                //background: @background-color-error;
-                color: @text-color-error;
-
-                .index {
-                    display: none;
-                }
-
-                //.position {}
-
-                .path:after {
-                    content:":";
-                }
-                .line:after {
-                    content:": ";
-                }
-                .start:after {
-                    content:"-";
-                }
-                .end:after {
-                    content:" : ";
-                }
-                .content {
-                }
-            }
-
-        }
-    }
-}
-*/

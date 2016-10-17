@@ -1,4 +1,13 @@
-#--connect 5500
 build.hxml
+
+-js lib/xxx.js
+-cp src
+-lib hxatom
+-lib om.haxe
+-lib om.io
+-lib om.net
+xxx.IDE
+-D hxnodejs_no_version_warning
+
 -debug
 -D dev
