@@ -68,13 +68,21 @@ class HaxeServer {
         requestsHead = requestsTail = currentRequest = null;
 	}
 
-	public function query( args : Array<String>, ?stdin : String, onMessage : String->Void, onResult : String->Void, onError : String->Void ) {
+	public function getVersion( callback : String->Void ) {
+		query( ['-version'],
+			null,
+			callback,
+			function(e) trace(e)
+		);
+	}
+
+	public function query( args : Array<String>, ?stdin : String, onResult : String->Void, onError : String->Void, ?onMessage : String->Void ) {
 
 		#if debug
 		console.debug( '%c'+args.join( ' ' ), 'color:#999;' );
 		#end
 
-		var req = new Request( args, stdin, onMessage, onResult, onError );
+		var req = new Request( args, stdin, onResult, onError, onMessage );
 		if( requestsHead == null ) {
             requestsHead = requestsTail = req;
 		} else {
@@ -185,12 +193,12 @@ private class Request {
     var onResult : String->Void;
     var onError : String->Void;
 
-	public function new( args : Array<String>, stdin : String, onMessage : String->Void, onResult : String->Void, onError : String->Void ) {
+	public function new( args : Array<String>, stdin : String, onResult : String->Void, onError : String->Void, ?onMessage : String->Void ) {
         this.args = args;
         this.stdin = stdin;
-        this.onMessage = onMessage;
         this.onResult = onResult;
         this.onError = onError;
+		this.onMessage = onMessage;
     }
 
 	public function prepareBody() : Buffer {
@@ -235,7 +243,7 @@ private class Request {
                     var line = line.substring(1).replace( "\x01", "\n" );
                     //trace("Haxe print:\n" + line);
 					//onResult( line );
-					onMessage( line );
+					if( onMessage != null ) onMessage( line );
                 case 0x02: // error
                     hasError = true;
                 default:

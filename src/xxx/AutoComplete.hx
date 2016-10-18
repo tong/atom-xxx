@@ -51,9 +51,6 @@ class AutoComplete {
 		//	args = extraArgs.concat( args );
 
 		IDE.server.query( args, editor.getText(),
-			function(msg){
-				trace(msg);
-			},
 			function(res){
 				//trace(res);
 				//var xml = Xml.parse( result ).firstElement();
@@ -61,6 +58,9 @@ class AutoComplete {
 			},
 			function(err){
 				trace(err);
+			},
+			function(msg){
+				trace(msg);
 			}
 		);
 	}

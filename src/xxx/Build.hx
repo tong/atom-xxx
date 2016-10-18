@@ -36,11 +36,7 @@ class Build extends atom.Emitter {
 		args.push( hxml.getBaseName() );
 
 		IDE.server.query( args,
-			function(msg){
-				trace(msg);
-				emit( EVENT_MESSAGE, msg );
-			},
-			 function(res){
+			function(res){
 				trace(res);
 				emit( EVENT_END, 0 );
 			},
@@ -49,6 +45,10 @@ class Build extends atom.Emitter {
 				//var err = ErrorMessage.parse( str );
 				emit( EVENT_ERROR, err.trim() );
 				emit( EVENT_END );
+			},
+			function(msg){
+				trace(msg);
+				emit( EVENT_MESSAGE, msg );
 			}
 		);
 
