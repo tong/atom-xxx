@@ -45,7 +45,9 @@ class IDE {
 
 		statusbar = new StatusbarView();
 
-		server = new HaxeServer();
+		trace( getConfig( 'haxe_path' ) );
+
+		server = new HaxeServer( getConfig( 'haxe_path' ) );
 
 		delay( function() {
 
