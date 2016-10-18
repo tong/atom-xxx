@@ -112,22 +112,26 @@ class BuildView {
 			errors = [];
 		});
 		build.onMessage( function(msg){
-			trace(msg);
-			var e = document.createLIElement();
-			e.classList.add( 'message' );
-			e.textContent = msg;
-			messages.appendChild(e);
+			//trace(msg);
+			log( msg );
 		});
 		build.onError( function(err){
 
-			errors.push( err );
+			var error = ErrorMessage.parse( err );
+			if( error == null ) {
+				log( err, 'error' );
 
-			var view = new ErrorMessageView( messages.children.length, err );
-			view.element.onclick = function() {
-				view.select();
-				openErrorPosition( err );
+			} else {
+
+				errors.push( error );
+
+				var view = new ErrorMessageView( messages.children.length, error );
+				view.element.onclick = function() {
+					view.select();
+					openErrorPosition( error );
+				}
+				messages.appendChild( view.element );
 			}
-			messages.appendChild( view.element );
 
 		});
 		build.onEnd( function(code){
@@ -144,14 +148,11 @@ class BuildView {
 
 					var file = new File( err.path );
 					var rel = Atom.project.relativizePath( build.hxml.getPath() );
-					trace(rel);
-					/*
-
+					//trace(rel);
 					var path = rel[0] +'/'+ err.path;
 					err.path = path;
 					trace(err.path);
 					openErrorPosition( err );
-					*/
 				}
 			}
 		});
@@ -175,6 +176,14 @@ class BuildView {
 
 	function destroy() {
 		panel.destroy();
+	}
+
+	function log( msg : String, ?status : String ) {
+		var e = document.createLIElement();
+		e.classList.add( 'message' );
+		if( status != null ) e.classList.add( status );
+		e.textContent = msg;
+		messages.appendChild(e);
 	}
 
 	static function openPosition( path : String, line : Int, column : Int, activatePane = true, searchAllPanes = true, ?callback : TextEditor->Void ) {

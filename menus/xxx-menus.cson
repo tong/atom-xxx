@@ -4,7 +4,7 @@
         'submenu': [
             'label': 'XXX'
             'submenu': [
-                { 'label': 'Toggle Server Log', 'command': 'xxx:toggle-server-log' }
+                { 'label': 'Select Hxml', 'command': 'xxx:select-hxml' }
             ]
         ]
     }

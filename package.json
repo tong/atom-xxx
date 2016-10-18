@@ -6,7 +6,7 @@
     "repository": "https://github.com/tong/atom-xxx",
     "license": "MIT",
     "engines": {
-        "atom": ">=1.10.2 .0 <2.0.0"
+        "atom": ">=1.11.1 .0 <2.0.0"
     },
     "dependencies": {
         "language-haxe": "^0.5.2"
@@ -18,28 +18,17 @@
             "properties": {
                 "haxe_path": {
                     "title": "Haxe Path",
-                    "description": "Path to your haxe executable",
+                    "description": "Path to your haxe executable file",
                     "type": "string",
                     "default": "haxe"
-                },
-                "haxe_server_port": {
-                    "title": "Haxe Server Port",
-                    "description": "The port number the haxe server will listen on.",
-                    "type": "integer",
-                    "default": 5500
                 },
                 "haxe_server_startdelay":{
                     "title": "Haxe Server Activation Delay",
                     "description": "The delay in seconds before starting the haxe server.",
                     "type": "integer",
                     "minimum": 0,
-                    "default": 2
-                },
-                "haxe_server_autostart":{
-                    "title": "Haxe Server Autostart",
-                    "description": "Automatically start a haxe server if a hxml file specifies the --connect parameter.",
-                    "type": "boolean",
-                    "default": true
+                    "maximum": 3,
+                    "default": 1
                 }
             }
         }
@@ -51,6 +40,12 @@
         "autocomplete.provider": {
             "versions": {
                 "2.0.0": "provideAutoCompletion"
+            }
+        },
+        "haxe": {
+            "description": "Provides access to haxe compiler",
+            "versions": {
+                "0.1.0": "provideService"
             }
         }
     }

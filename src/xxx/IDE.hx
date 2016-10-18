@@ -6,6 +6,8 @@ import atom.Directory;
 import atom.Disposable;
 import atom.Emitter;
 import atom.File;
+import xxx.view.BuildView;
+import xxx.view.StatusbarView;
 import haxe.Timer.delay;
 import Atom.commands;
 import Atom.notifications;
@@ -23,21 +25,56 @@ class IDE {
 
 	static inline function __init__() untyped module.exports = xxx.IDE;
 
+	static inline var EVENT_SELECT_HXML = 'hxml_select';
+	static inline var EVENT_BUILD = 'build';
+
 	public static var server(default,null) : HaxeServer;
 	public static var hxmlFiles(default,null) : Array<String>;
 	public static var hxml(default,null) : File;
 
 	static var disposables : CompositeDisposable;
 	static var emitter : Emitter;
+	static var statusbar : StatusbarView;
 
 	static function activate( state : IDEState ) {
 
 		trace( 'Atom-xxx' );
 
 		disposables = new CompositeDisposable();
-		emitter = new Emitter();
+		disposables.add( emitter = new Emitter() );
+
+		statusbar = new StatusbarView();
 
 		server = new HaxeServer();
+
+		delay( function() {
+
+			server.start();
+
+			disposables.add( commands.add( 'atom-workspace', 'xxx:build', function(e) {
+
+				var treeViewFile = getTreeViewFile();
+				if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
+					if( hxml != null && treeViewFile != hxml.getPath() ) {
+						selectHxml( treeViewFile );
+					}
+				}
+
+				build();
+			}));
+
+			/*
+			disposables.add( commands.add( 'atom-workspace', 'xxx:build-all', function(e) {
+				var selectedHxmlFile = hxml.getPath();
+				for( file in hxmlFiles ) {
+					selectHxml( file );
+					build();
+				}
+				if( selectedHxmlFile != null ) selectHxml( selectedHxmlFile );
+			}));
+			*/
+
+		}, getConfig( 'haxe_server_startdelay' ) );
 
 		searchHxmlFiles( function( found:Array<String> ) {
 
@@ -53,28 +90,79 @@ class IDE {
 				selectHxml( found[0] );
 			}
 
-			server.start();
-
-			disposables.add( commands.add( 'atom-workspace', 'xxx:build', function(e) {
-
-				var treeViewFile = getTreeViewFile();
-				if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
-					if( hxml != null && treeViewFile != hxml.getPath() ) {
-						selectHxml( treeViewFile );
-					}
+			/*
+			disposables.add( commands.add( 'atom-workspace', 'xxx:select-hxml', function(e) {
+				trace(e);
+				var path : String = e.target.getAttribute( 'data-path' );
+				trace(path);
+				if( path != null && path.extension() == 'hxml' ) {
+					trace(">>");
+					new File( path ).exists().then( function(exists:Bool){
+						trace(exists);
+						if( exists ) {
+							trace(path);
+							selectHxml( path );
+						}
+					});
 				}
+				//Fs.exists( path, function(){} )
+				//trace(e.target.getAttribute('data-path'));
+				//var view = new xxx.view.SelectHxmlView();
+			}));
+			*/
 
-				build();
+			Atom.workspace.observeTextEditors( function(editor){
+				var path = editor.getPath();
+				if( path.extension() == 'hx' ) {
+					editor.onDidChange( function(e){
 
-			}) );
+						/*
+						var autoComplete = new AutoComplete( editor );
+
+						autoComplete.fieldAccess( function(xml:Xml) {
+							if( xml != null ) {
+								trace(xml);
+							}
+						});
+						*/
+
+						/*
+						autoComplete.usage( function(xml:Xml) {
+							if( xml != null ) {
+								trace(xml);
+							}
+						});
+						*/
+
+						/*
+						autoComplete.position( function(xml:Xml) {
+							if( xml != null ) {
+								var str = xml.firstElement().firstChild().nodeValue;
+								var reg = ~/^\s*(.+):([0-9]+):\s*(characters*|lines)\s([0-9]+)(-([0-9]+))$/i;
+								if( reg.match( str ) ) {
+									var path = reg.matched(1);
+									var line = Std.parseInt( reg.matched(2) );
+									var start = Std.parseInt( reg.matched(4) );
+									var end = Std.parseInt( reg.matched(6) );
+									statusbar.setMeta( path+':'+line );
+									//trace( path );
+									//trace( line );
+									//trace( start+"-"+end );
+								}
+							}
+						});
+						*/
+
+					});
+
+					/*
+					editor.observeSelections( function(selection) {
+						trace(selection);
+					});
+					*/
+				}
+			});
 		});
-
-		/*
-		disposables.add( commands.add( 'atom-workspace', 'xxx:toggle-server-log', function(e) {
-			if( serverLog == null ) serverLog = new ServerLogView();
-			serverLog.toggle();
-		}) );
-		*/
 	}
 
 	static function serialize() : IDEState {
@@ -86,14 +174,13 @@ class IDE {
 	static function deactivate() {
 		disposables.dispose();
 		server.stop();
-		//if( serverLog != null ) serverLog.dispose();
 	}
 
 	public static inline function onSelectHxml( h : File->Void )
-		return emitter.on( 'select_hxml', h );
+		return emitter.on( EVENT_SELECT_HXML, h );
 
 	public static inline function onBuild( h : Build->Void )
-		return emitter.on( 'build', h );
+		return emitter.on( EVENT_BUILD, h );
 
 	public static function selectHxml( path : String ) {
 		if( path == null ) {
@@ -104,22 +191,24 @@ class IDE {
             }
 			hxml = new File( path );
 		}
-		emitter.emit( 'select_hxml', hxml );
-	}
-
-	public static function build() {
-		var build = new Build( hxml );
-		//build.onError();
-		var view = new xxx.view.BuildView( build );
-		//buildView.show();
+		emitter.emit( EVENT_SELECT_HXML, hxml );
 		/*
-		build.onError( function(str){
-			var err = om.haxe.ErrorMessage.parse(str);
-			trace(str);
+		hxml.read(true).then(function(str){
+			trace(om.haxe.Hxml.parseTokens(str));
 		});
 		*/
-		emitter.emit( 'build', build );
+	}
+
+	public static function build() : Build {
+		if( hxml == null ) {
+			notifications.addWarning( 'No hxml file selected' );
+			return null;
+		}
+		var build = new Build( hxml );
+		var view = new xxx.view.BuildView( build );
+		emitter.emit( EVENT_BUILD, build );
 		build.start();
+		return build;
 	}
 
 	static function searchHxmlFiles( ?paths : Array<String>, maxDepth = 5, callback : Array<String>->Void ) {
@@ -176,14 +265,25 @@ class IDE {
 	}
 
 	static function consumeStatusBar( bar ) {
-		bar.addLeftTile({
-			item: new xxx.view.StatusbarView().element,
-			priority: -100
-		});
+		bar.addLeftTile( { item: statusbar.element, priority: -100 } );
 	}
 
 	static function provideAutoCompletion() {
-		return new AutoComplete();
+		return new AutoCompleteProvider();
+	}
+
+	static function provideService() {
+		return {
+			getHxml: function()
+				return IDE.hxml,
+			selectHxml: IDE.selectHxml,
+			build: IDE.build,
+			/*
+			usage: function( file : String, index : Int ) {
+				//AutoComplete.usage( file, index );
+			}
+			*/
+		};
 	}
 
 	/*
@@ -198,9 +298,4 @@ class IDE {
 		};
 	}
 	*/
-
-	static function provideService() {
-		//TODO
-		return null;
-	}
 }

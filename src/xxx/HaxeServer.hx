@@ -57,7 +57,7 @@ class HaxeServer {
 	public function stop() {
 		if( proc != null ) {
             proc.removeAllListeners();
-            proc.kill();
+			try proc.kill() catch(e:Dynamic) { trace(e); }
             proc = null;
         }
 		var req = requestsHead;
@@ -70,7 +70,9 @@ class HaxeServer {
 
 	public function query( args : Array<String>, ?stdin : String, onMessage : String->Void, onResult : String->Void, onError : String->Void ) {
 
-		trace("### "+args);
+		#if debug
+		console.debug( '%c'+args.join( ' ' ), 'color:#999;' );
+		#end
 
 		var req = new Request( args, stdin, onMessage, onResult, onError );
 		if( requestsHead == null ) {
@@ -82,6 +84,8 @@ class HaxeServer {
 		}
 		checkQueue();
 	}
+
+	//public function
 
 	function checkQueue() {
         if( currentRequest != null )
