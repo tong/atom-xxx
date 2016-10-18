@@ -51,30 +51,36 @@ class IDE {
 
 		delay( function() {
 
-			server.start();
+			server.start( function(err) {
 
-			disposables.add( commands.add( 'atom-workspace', 'xxx:build', function(e) {
+				if( err != null ) {
+					notifications.addWarning( err );
+				} else {
 
-				var treeViewFile = getTreeViewFile();
-				if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
-					if( hxml != null && treeViewFile != hxml.getPath() ) {
-						selectHxml( treeViewFile );
-					}
+					disposables.add( commands.add( 'atom-workspace', 'xxx:build', function(e) {
+
+						var treeViewFile = getTreeViewFile();
+						if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
+							if( hxml != null && treeViewFile != hxml.getPath() ) {
+								selectHxml( treeViewFile );
+							}
+						}
+
+						build();
+					}));
+
+					/*
+					disposables.add( commands.add( 'atom-workspace', 'xxx:build-all', function(e) {
+						var selectedHxmlFile = hxml.getPath();
+						for( file in hxmlFiles ) {
+							selectHxml( file );
+							build();
+						}
+						if( selectedHxmlFile != null ) selectHxml( selectedHxmlFile );
+					}));
+					*/
 				}
-
-				build();
-			}));
-
-			/*
-			disposables.add( commands.add( 'atom-workspace', 'xxx:build-all', function(e) {
-				var selectedHxmlFile = hxml.getPath();
-				for( file in hxmlFiles ) {
-					selectHxml( file );
-					build();
-				}
-				if( selectedHxmlFile != null ) selectHxml( selectedHxmlFile );
-			}));
-			*/
+			});
 
 		}, getConfig( 'haxe_server_startdelay' ) );
 

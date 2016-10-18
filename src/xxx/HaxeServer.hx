@@ -29,7 +29,7 @@ class HaxeServer {
 	public inline function isActive() : Bool
 		return proc != null;
 
-	public function start() {
+	public function start( callback : String->Void ) {
 
 		stop();
 
@@ -52,6 +52,11 @@ class HaxeServer {
 			console.debug( '%c'+buf.toString(), 'color:#F68712;' );
 			#end
         });
+
+		getVersion( function(v){
+			var version : om.Version = v;
+			callback( (version < '3.3.0') ? 'haxe >= 3.3.0 required' : null );
+		});
 	}
 
 	public function stop() {
