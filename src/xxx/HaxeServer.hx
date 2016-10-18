@@ -77,11 +77,6 @@ class HaxeServer {
 	}
 
 	public function query( args : Array<String>, ?stdin : String, onResult : String->Void, onError : String->Void, ?onMessage : String->Void ) {
-
-		#if debug
-		console.debug( '%c'+args.join( ' ' ), 'color:#999;' );
-		#end
-
 		var req = new Request( args, stdin, onResult, onError, onMessage );
 		if( requestsHead == null ) {
             requestsHead = requestsTail = req;
