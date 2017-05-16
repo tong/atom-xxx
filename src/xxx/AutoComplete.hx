@@ -15,6 +15,8 @@ class AutoComplete {
 
 	var editor : TextEditor;
 
+	//var lastQuery
+
 	public function new( editor : TextEditor ) {
 		this.editor = editor;
 	}
@@ -37,11 +39,16 @@ class AutoComplete {
 		query( pos, 'position', callback );
 	}
 
+	public inline function topLevel( ?pos : Point, callback : Xml->Void ) {
+		query( pos, 'toplevel', callback );
+	}
+
 	function query( ?pos : Point, ?mode : String, ?extraArgs : Array<String>, onResult : Xml->Void, ?onError : String->Void ) {
 
 		if( pos == null ) pos = editor.getCursorBufferPosition();
 
-		var index = editor.getTextInBufferRange( new Range( new Point(0,0), pos ) ).length;
+		var preText = editor.getTextInBufferRange( new Range( new Point(0,0), pos ) );
+		var index = preText.length;
 
 		var displayPos = editor.getPath() + '@' + index;
 		if( mode != null ) displayPos += '@$mode';
@@ -50,7 +57,7 @@ class AutoComplete {
 		//if( extraArgs != null ) {
 		//	args = extraArgs.concat( args );
 
-		IDE.server.query( args, editor.getText(),
+		IDE.server.query( args, preText,
 			function(res){
 				//trace(res);
 				//var xml = Xml.parse( result ).firstElement();

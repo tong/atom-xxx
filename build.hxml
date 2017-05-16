@@ -1,17 +1,13 @@
 -js lib/xxx.js
 -cp src
--lib hxatom
+-lib atom
 -lib om.haxe
 -lib om.io
 -lib om.net
 xxx.IDE
 -dce full
 -D hxnodejs_no_version_warning
-
-## Development
 -debug
-
-## Release
 #--no-traces
 #-lib closure
 #-D closure_overwrite

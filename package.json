@@ -26,6 +26,11 @@
             "minimum": 0,
             "maximum": 3,
             "default": 1
+        },
+        "my_color":{
+            "title": "MY Color Path",
+            "type": "color",
+            "default": "#00ff00"
         }
     },
     "consumedServices": {

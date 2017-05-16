@@ -16,6 +16,7 @@ class Build extends atom.Emitter {
 	public var hxml(default,null) : File;
     //public var active(default,null) : Bool;
     //public var time(default,null) : Float;
+	public var args(default,null) : Array<String>;
 
 	public function new( hxml : File ) {
 		super();
@@ -30,8 +31,9 @@ class Build extends atom.Emitter {
 	public function start( verbose = false ) {
 
 		//TODO really
-		var cwd = hxml.getParent().getPath();
-		var args = [ '--cwd', cwd ];
+		var parent = hxml.getParent();
+		var cwd = parent.getPath();
+		args = [ '--cwd', cwd ];
 		if( verbose ) args.push( '-v' );
 		args.push( hxml.getBaseName() );
 
@@ -44,15 +46,14 @@ class Build extends atom.Emitter {
 				//var str : String = err.trim();
 				//var err = ErrorMessage.parse( str );
 				emit( EVENT_ERROR, err.trim() );
-				emit( EVENT_END );
+				emit( EVENT_END, null );
 			},
 			function(msg){
-				trace(msg);
 				emit( EVENT_MESSAGE, msg );
 			}
 		);
 
-		emit( EVENT_START );
+		emit( EVENT_START, null );
 	}
 
 }

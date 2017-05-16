@@ -14,7 +14,7 @@ import Atom.tooltips;
 using haxe.io.Path;
 
 @:keep
-class StatusbarView implements atom.Disposable {
+class StatusbarView /*implements atom.Disposable*/ {
 
 	public var element(default,null) : DivElement;
 
@@ -163,7 +163,7 @@ class StatusbarView implements atom.Disposable {
     }
 
 	static function getRelativePath( fullPath : String ) {
-		var rel = Atom.project.relativizePath( fullPath );
+		var rel : Array<String> = Atom.project.relativizePath( fullPath );
 		var parts = rel[0].split( '/' );
 		return parts[parts.length-1]+'/'+rel[1];
 	}

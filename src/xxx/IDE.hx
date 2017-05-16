@@ -1,23 +1,20 @@
 package xxx;
 
 import js.node.Fs;
+import Atom.commands;
+import Atom.notifications;
 import atom.CompositeDisposable;
 import atom.Directory;
 import atom.Disposable;
 import atom.Emitter;
 import atom.File;
+import haxe.Timer.delay;
 import xxx.view.BuildView;
 import xxx.view.StatusbarView;
-import haxe.Timer.delay;
-import Atom.commands;
-import Atom.notifications;
+import om.haxe.LanguageServer;
 
 using StringTools;
 using haxe.io.Path;
-
-private typedef IDEState = {
-	var hxml : String;
-}
 
 @:keep
 @:expose
@@ -28,7 +25,7 @@ class IDE {
 	static inline var EVENT_SELECT_HXML = 'hxml_select';
 	static inline var EVENT_BUILD = 'build';
 
-	public static var server(default,null) : HaxeServer;
+	public static var server(default,null) : LanguageServer;
 	public static var hxmlFiles(default,null) : Array<String>;
 	public static var hxml(default,null) : File;
 
@@ -36,18 +33,17 @@ class IDE {
 	static var emitter : Emitter;
 	static var statusbar : StatusbarView;
 
-	static function activate( state : IDEState ) {
+	static function activate( state ) {
 
 		trace( 'Atom-xxx' );
 
 		disposables = new CompositeDisposable();
-		disposables.add( emitter = new Emitter() );
+		emitter = new Emitter();
+		//disposables.add( emitter = new Emitter() );
 
 		statusbar = new StatusbarView();
 
-		trace( getConfig( 'haxe_path' ) );
-
-		server = new HaxeServer( getConfig( 'haxe_path' ) );
+		server = new LanguageServer( getConfig( 'haxe_path' ) );
 
 		delay( function() {
 
@@ -121,11 +117,21 @@ class IDE {
 
 			Atom.workspace.observeTextEditors( function(editor){
 				var path = editor.getPath();
-				if( path.extension() == 'hx' ) {
+				if( path != null && haxe.io.Path.extension(path) == 'hx' ) {
 					editor.onDidChange( function(e){
 
 						/*
 						var autoComplete = new AutoComplete( editor );
+
+						autoComplete.topLevel( function(xml:Xml) {
+							if( xml != null ) {
+								trace(xml);
+							}
+						});
+						*/
+
+
+						/*
 
 						autoComplete.fieldAccess( function(xml:Xml) {
 							if( xml != null ) {
@@ -173,7 +179,7 @@ class IDE {
 		});
 	}
 
-	static function serialize() : IDEState {
+	static function serialize() {
 		return {
             hxml: (hxml != null) ? hxml.getPath() : null
         };
@@ -264,7 +270,12 @@ class IDE {
 	}
 
 	static function getTreeViewFile( ?ext : String ) : String {
-        var path : String = Atom.packages.getLoadedPackage( 'tree-view' ).serialize().selectedPath;
+		//TODO
+		var treeView = Atom.packages.getLoadedPackage( 'tree-view' );
+		var path = treeView.serialize();
+		if( path == null )
+			return null;
+        var path : String = path.selectedPath;
         return (ext == null || (path != null && path.extension() == ext)) ? path : null;
     }
 
