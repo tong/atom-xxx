@@ -7,7 +7,7 @@
 xxx.IDE
 -dce full
 -D hxnodejs_no_version_warning
--debug
-#--no-traces
-#-lib closure
-#-D closure_overwrite
+#-debug
+--no-traces
+-lib closure
+-D closure_overwrite
