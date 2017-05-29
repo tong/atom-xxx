@@ -32,6 +32,7 @@ class IDE {
 	static var disposables : CompositeDisposable;
 	static var emitter : Emitter;
 	static var statusbar : StatusbarView;
+	static var projectPaths : Array<String>;
 
 	static function activate( state ) {
 
@@ -40,10 +41,9 @@ class IDE {
 		disposables = new CompositeDisposable();
 		emitter = new Emitter();
 		//disposables.add( emitter = new Emitter() );
-
 		statusbar = new StatusbarView();
-
 		server = new LanguageServer( getConfig( 'haxe_path' ) );
+		projectPaths = Atom.project.getPaths();
 
 		delay( function() {
 
@@ -114,6 +114,32 @@ class IDE {
 				//var view = new xxx.view.SelectHxmlView();
 			}));
 			*/
+
+			disposables.add( Atom.project.onDidChangePaths( (paths:Array<String>)->{
+
+				var added = new Array<String>();
+				//var removed = new Array<String>();
+				for( np in paths ) {
+					var gotAdded = true;
+					for( op in projectPaths ) {
+						if( op == np ) {
+							gotAdded = false;
+							break;
+						}
+					}
+					if( gotAdded ) added.push( np );
+				}
+
+				searchHxmlFiles( added, function(found:Array<String>){
+					trace( found.length + ' new hxml files found' );
+					//hxmlFiles = found;
+					hxmlFiles = hxmlFiles.concat( found );
+					//trace( hxmlFiles );
+					//TODO report event (?)
+				} );
+
+				projectPaths = paths;
+			}) );
 
 			Atom.workspace.observeTextEditors( function(editor){
 				var path = editor.getPath();
