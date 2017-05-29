@@ -55,7 +55,7 @@ class IDE {
 
 					disposables.add( commands.add( 'atom-workspace', 'xxx:build', function(e) {
 
-						var treeViewFile = getTreeViewFile();
+						var treeViewFile : String = e.target.getAttribute( 'data-path' );
 						if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
 							if( hxml != null && treeViewFile != hxml.getPath() ) {
 								selectHxml( treeViewFile );
@@ -297,15 +297,18 @@ class IDE {
 		}
 	}
 
+	/*
 	static function getTreeViewFile( ?ext : String ) : String {
 		//TODO
 		var treeView = Atom.packages.getLoadedPackage( 'tree-view' );
+		trace( treeView );
 		var path = treeView.serialize();
 		if( path == null )
 			return null;
         var path : String = path.selectedPath;
         return (ext == null || (path != null && path.extension() == ext)) ? path : null;
     }
+	*/
 
 	static inline function getConfig<T>( id : String ) : T {
 		return Atom.config.get( 'xxx.$id' );
