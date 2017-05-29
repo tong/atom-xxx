@@ -249,7 +249,9 @@ class IDE {
 								if( --pending == 0 ) callback( results );
 							}
 						} else {
-							if( file.extension() == 'hxml' ) results.push( file );
+							if( file.extension() == 'hxml' && file.withoutDirectory() != 'extraParams.hxml' ) {
+								results.push( file );
+							}
 							if( --pending == 0 ) callback( results );
 						}
 					});
