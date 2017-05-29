@@ -225,7 +225,7 @@ class IDE {
 		return build;
 	}
 
-	static function searchHxmlFiles( ?paths : Array<String>, maxDepth = 5, callback : Array<String>->Void ) {
+	static function searchHxmlFiles( ?paths : Array<String>, maxDepth = 3, callback : Array<String>->Void ) {
 
 		if( paths == null ) paths = Atom.project.getPaths();
 
