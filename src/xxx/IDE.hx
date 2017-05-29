@@ -141,7 +141,7 @@ class IDE {
 				projectPaths = paths;
 			}) );
 
-			Atom.workspace.observeTextEditors( function(editor){
+			disposables.add( Atom.workspace.observeTextEditors( function(editor){
 				var path = editor.getPath();
 				if( path != null && haxe.io.Path.extension(path) == 'hx' ) {
 					editor.onDidChange( function(e){
@@ -201,7 +201,7 @@ class IDE {
 					});
 					*/
 				}
-			});
+			}) );
 		});
 	}
 
