@@ -1,4 +1,12 @@
-language: objective-c
+language: haxe
+
+haxe:
+  - "3.4.3"
+  - development
+
+matrix:
+  allow_failures:
+    - haxe: development
 
 notifications:
   email:
