@@ -1,20 +1,20 @@
 package xxx.view;
 
-import js.Browser.document;
-import js.html.Element;
-import js.html.AnchorElement;
-import js.html.DivElement;
-import js.html.LIElement;
-import js.html.OListElement;
-import js.html.SpanElement;
-import om.Time;
+import Atom.workspace;
 import atom.Disposable;
 import atom.File;
 import atom.Panel;
 import atom.Point;
 import atom.Range;
 import atom.TextEditor;
-import Atom.workspace;
+import js.Browser.document;
+import js.html.AnchorElement;
+import js.html.DivElement;
+import js.html.Element;
+import js.html.LIElement;
+import js.html.OListElement;
+import js.html.SpanElement;
+import om.Time;
 
 import om.haxe.ErrorMessage;
 
@@ -64,6 +64,7 @@ private class ErrorMessageView {
 		//var content = document.createPreElement();
 		content.classList.add( 'content' );
 		content.textContent = err.content;
+		//content.setAttribute( 'tabindex', '0' );
 		element.appendChild( content );
 
 		//var btn = document.createSpanElement();
@@ -99,7 +100,8 @@ class BuildView {
 		current = this;
 
 		element = document.createDivElement();
-        element.classList.add( 'xxx-build', 'resizer' );
+        element.classList.add( 'xxx-build', 'resizer', 'native-key-bindings' );
+		element.setAttribute( 'tabindex', '-1' );
 
 		messages = document.createOListElement();
 		messages.classList.add( 'messages', 'scroller' );
@@ -114,7 +116,7 @@ class BuildView {
 			//log( build.args.join( ' ' ) );
 		});
 		build.onMessage( function(msg){
-			//trace(msg);
+			trace(msg);
 			log( msg );
 		});
 		build.onError( function(err){
@@ -122,6 +124,7 @@ class BuildView {
 			for( line in err.split( '\n' ) ) {
 
 				var error = ErrorMessage.parse( line );
+
 				if( error == null ) {
 					log( err, 'error' );
 
@@ -130,15 +133,13 @@ class BuildView {
 					errors.push( error );
 
 					var view = new ErrorMessageView( messages.children.length, error );
-					view.element.onclick = function() {
+					view.element.onclick = function(e) {
 						view.select();
-						openErrorPosition( error );
+						if( e.ctrlKey ) openErrorPosition( error );
 					}
 					messages.appendChild( view.element );
 				}
 			}
-
-
 		});
 		build.onEnd( function(code){
 			switch code {
@@ -147,46 +148,31 @@ class BuildView {
 					hide();
 			case _:
 				if( errors.length > 0 ) {
+
 					//TODO
 					var err = errors[0];
-					var file = new File( err.path, false );
+
+					// Get absolute file path
+					var hxmlPath = build.hxml.getPath();
+					var filePath = haxe.io.Path.directory( hxmlPath ) + '/' + err.path;
+					var file = new File( filePath, false );
 					if( file.existsSync() ) {
-						openErrorPosition( err );
+	//TODO					openErrorPosition( err );
 					} else {
-						var rel = Atom.project.relativizePath( build.hxml.getPath() );
+						var rel = Atom.project.relativizePath( hxmlPath );
 						err.path = rel[0] + '/'+ err.path;
 					}
+
 					//openErrorPosition( err );
-
-					/*
-					err.path = file.getRealPathSync();
-					file.getRealPath().then( function(e){
-						trace(e);
-						trace( new File(e).existsSync() );
-					});
-					*/
-
-					//TODO
-					/*
-					trace(err.path);
-					trace(sys.FileSystem.exists(err.path));
-					var file = new File( err.path );
-					trace(file.getRealPathSync());
-					file.exists().then( function(exists) {
-						trace(exists);
-						if( !exists ) {
-							var rel = Atom.project.relativizePath( build.hxml.getPath() );
-							//trace(rel);
-							var path = rel[0] +'/'+ err.path;
-							trace(path);
-						}
-					});
-					*/
 				}
 			}
 		});
 
 		element.addEventListener( 'click', handleClick, false );
+		js.Browser.window.addEventListener( 'keydown', function(e){
+			trace( e );
+
+		}, false );
 	}
 
 	public inline function isVisible() {
@@ -250,6 +236,9 @@ class BuildView {
 	static function openErrorPosition( err : ErrorMessage ) {
 
 		var line = err.line - 1;
+
+		trace("openErrorPosition");
+		trace(err);
 
 		openPosition( err.path, line, err.character, function( editor : TextEditor ) {
 

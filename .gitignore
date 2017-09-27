@@ -1,4 +1,5 @@
 _*
 data/
+lib/*.js.map
 test/
 *.zip

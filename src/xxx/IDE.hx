@@ -259,28 +259,32 @@ class IDE {
 		walk = function( dir : String, callback : Array<String>->Void, depth = 0 ) {
 			var results = new Array<String>();
 			Fs.readdir( dir, function(err,list){
-				var pending = list.length;
-				if( pending == 0 )
-					return callback( results );
-				for( file in list ) {
-					file = js.node.Path.resolve( dir, file );
-					Fs.stat( file, function(err,stat){
-						if( stat != null && stat.isDirectory() ) {
-							if( depth < maxDepth ) {
-								walk( file, function(res) {
-									results = results.concat( res );
+				if( err != null ) {
+					callback( results ); //TODO silently ignore errors ?
+				} else {
+					var pending = list.length;
+					if( pending == 0 )
+						return callback( results );
+					for( file in list ) {
+						file = js.node.Path.resolve( dir, file );
+						Fs.stat( file, function(err,stat){
+							if( stat != null && stat.isDirectory() ) {
+								if( depth < maxDepth ) {
+									walk( file, function(res) {
+										results = results.concat( res );
+										if( --pending == 0 ) callback( results );
+									}, depth+1 );
+								} else {
 									if( --pending == 0 ) callback( results );
-								}, depth+1 );
+								}
 							} else {
+								if( file.extension() == 'hxml' && file.withoutDirectory() != 'extraParams.hxml' ) {
+									results.push( file );
+								}
 								if( --pending == 0 ) callback( results );
 							}
-						} else {
-							if( file.extension() == 'hxml' && file.withoutDirectory() != 'extraParams.hxml' ) {
-								results.push( file );
-							}
-							if( --pending == 0 ) callback( results );
-						}
-					});
+						});
+					}
 				}
 			});
 		}
@@ -319,6 +323,7 @@ class IDE {
 	}
 
 	static function provideAutoCompletion() {
+		trace("provideAutoCompletion");
 		return new AutoCompleteProvider();
 	}
 

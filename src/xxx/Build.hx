@@ -39,7 +39,6 @@ class Build extends atom.Emitter {
 
 		IDE.server.query( args,
 			function(res){
-				trace(res);
 				emit( EVENT_END, 0 );
 			},
 			function(err){
