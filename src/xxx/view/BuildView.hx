@@ -15,7 +15,6 @@ import js.html.LIElement;
 import js.html.OListElement;
 import js.html.SpanElement;
 import om.Time;
-
 import om.haxe.ErrorMessage;
 
 using StringTools;
@@ -91,6 +90,8 @@ class BuildView {
     var element : DivElement;
 	var messages : OListElement;
 
+	var timeStart : Float;
+
 	public function new( build : Build ) {
 
 		if( current != null ) {
@@ -112,11 +113,11 @@ class BuildView {
 		var errors = new Array<ErrorMessage>();
 
 		build.onStart( function(){
+			timeStart = Time.stamp();
 			errors = [];
 			//log( build.args.join( ' ' ) );
 		});
 		build.onMessage( function(msg){
-			trace(msg);
 			log( msg );
 		});
 		build.onError( function(err){
@@ -169,10 +170,6 @@ class BuildView {
 		});
 
 		element.addEventListener( 'click', handleClick, false );
-		js.Browser.window.addEventListener( 'keydown', function(e){
-			trace( e );
-
-		}, false );
 	}
 
 	public inline function isVisible() {
@@ -203,16 +200,22 @@ class BuildView {
 		if( msg.length == 0 )
 			return;
 
-			var e = document.createLIElement();
-			e.classList.add( 'message' );
-			if( status != null ) e.classList.add( status );
-			e.textContent = msg;
+		var message = document.createLIElement();
+		message.classList.add( 'message' );
+		if( status != null ) message.classList.add( status );
+		//message.textContent = msg;
 
-			//var content = document.createPreElement();
-			//content.textContent = msg;
-			//e.appendChild( content );
+		var time = document.createSpanElement();
+		time.classList.add( 'time' );
+		time.textContent = Std.string( Std.int( Time.stamp() - timeStart ) );
+		message.appendChild( time );
 
-			messages.appendChild(e);
+		var content = document.createSpanElement();
+		content.classList.add( 'content' );
+		content.textContent = msg;
+		message.appendChild( content );
+
+		messages.appendChild( message );
 		//}
 	}
 

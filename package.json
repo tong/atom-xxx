@@ -1,12 +1,12 @@
 {
     "name": "xxx",
-    "version": "0.8.2",
+    "version": "0.8.3",
     "description": "Sex with haxe",
     "keywords": ["haxe","ide","xxx"],
     "repository": "https://github.com/tong/atom-xxx",
     "license": "MIT",
     "engines": {
-        "atom": ">=1.11.1 .0 <2.0.0"
+        "atom": ">=1.20.0 .0 <2.0.0"
     },
     "dependencies": {
         "language-haxe": "^0.5.3"
@@ -26,11 +26,6 @@
             "minimum": 0,
             "maximum": 3,
             "default": 1
-        },
-        "my_color":{
-            "title": "MY Color Path",
-            "type": "color",
-            "default": "#00ff00"
         }
     },
     "consumedServices": {
