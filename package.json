@@ -1,6 +1,6 @@
 {
     "name": "xxx",
-    "version": "0.8.3",
+    "version": "0.9.0",
     "description": "Sex with haxe",
     "keywords": ["haxe","ide","xxx"],
     "repository": "https://github.com/tong/atom-xxx",
@@ -14,18 +14,30 @@
     "main": "./lib/xxx",
     "configSchema": {
         "haxe_path": {
+            "order": 1,
             "title": "Haxe Path",
             "description": "Path to your haxe executable file",
             "type": "string",
             "default": "haxe"
         },
-        "haxe_server_startdelay":{
+        "haxe_server_startdelay": {
+            "order": 2,
             "title": "Haxe Server Activation Delay",
             "description": "The delay in seconds before starting the haxe server.",
             "type": "integer",
             "minimum": 0,
-            "maximum": 3,
+            "maximum": 5,
             "default": 1
+        },
+        "autocomplete": {
+            "order": 3,
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": true
+                }
+            }
         }
     },
     "consumedServices": {

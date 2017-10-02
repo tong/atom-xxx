@@ -1,26 +1,24 @@
 package xxx;
 
-import js.node.Fs;
 import Atom.commands;
 import Atom.notifications;
-import atom.CompositeDisposable;
 import atom.Directory;
-import atom.Disposable;
-import atom.Emitter;
 import atom.File;
 import haxe.Timer.delay;
+import js.node.Fs;
+import om.haxe.LanguageServer;
 import xxx.view.BuildView;
 import xxx.view.StatusbarView;
-import om.haxe.LanguageServer;
 
-using StringTools;
 using haxe.io.Path;
 
 @:keep
 @:expose
 class IDE {
 
-	static inline function __init__() untyped module.exports = xxx.IDE;
+	static inline function __init__() {
+		untyped module.exports = xxx.IDE;
+	}
 
 	static inline var EVENT_SELECT_HXML = 'hxml_select';
 	static inline var EVENT_BUILD = 'build';
@@ -28,10 +26,10 @@ class IDE {
 	public static var server(default,null) : LanguageServer;
 	public static var hxmlFiles(default,null) : Array<String>;
 	public static var hxml(default,null) : File;
+	public static var statusbar(default,null) : StatusbarView;
 
 	static var disposables : CompositeDisposable;
 	static var emitter : Emitter;
-	static var statusbar : StatusbarView;
 	static var projectPaths : Array<String>;
 
 	static function activate( state ) {
@@ -39,11 +37,14 @@ class IDE {
 		trace( 'Atom-xxx' );
 
 		disposables = new CompositeDisposable();
+
 		emitter = new Emitter();
 		//disposables.add( emitter = new Emitter() );
+
 		statusbar = new StatusbarView();
-		server = new LanguageServer( getConfig( 'haxe_path' ) );
+
 		projectPaths = Atom.project.getPaths();
+		server = new LanguageServer( getConfig( 'haxe_path' ), #if debug true #else false #end );
 
 		delay( function() {
 
@@ -141,67 +142,56 @@ class IDE {
 				projectPaths = paths;
 			}) );
 
-			disposables.add( Atom.workspace.observeTextEditors( function(editor){
+			disposables.add( Atom.workspace.observeTextEditors( function(editor:TextEditor){
 				var path = editor.getPath();
-				if( path != null && haxe.io.Path.extension(path) == 'hx' ) {
-					editor.onDidChange( function(e){
-
-						/*
-						var autoComplete = new AutoComplete( editor );
-
-						autoComplete.topLevel( function(xml:Xml) {
-							if( xml != null ) {
-								trace(xml);
-							}
-						});
-						*/
-
-
-						/*
-
-						autoComplete.fieldAccess( function(xml:Xml) {
-							if( xml != null ) {
-								trace(xml);
-							}
-						});
-						*/
-
-						/*
-						autoComplete.usage( function(xml:Xml) {
-							if( xml != null ) {
-								trace(xml);
-							}
-						});
-						*/
-
-						/*
-						autoComplete.position( function(xml:Xml) {
-							if( xml != null ) {
-								var str = xml.firstElement().firstChild().nodeValue;
-								var reg = ~/^\s*(.+):([0-9]+):\s*(characters*|lines)\s([0-9]+)(-([0-9]+))$/i;
-								if( reg.match( str ) ) {
-									var path = reg.matched(1);
-									var line = Std.parseInt( reg.matched(2) );
-									var start = Std.parseInt( reg.matched(4) );
-									var end = Std.parseInt( reg.matched(6) );
-									statusbar.setMeta( path+':'+line );
-									//trace( path );
-									//trace( line );
-									//trace( start+"-"+end );
-								}
-							}
-						});
-						*/
-
-					});
+				if( path != null && haxe.io.Path.extension( path ) == 'hx' ) {
 
 					/*
-					editor.observeSelections( function(selection) {
-						trace(selection);
+					function getPosition( pos : Point, callback : Dynamic->Void ) {
+						var complete = new AutoComplete( editor );
+						complete.position( pos,
+							function(xml){
+								for( e in xml.elements() ) {
+									var str = e.firstChild().nodeValue;
+									//var msg = om.haxe.ErrorMessage.parse( str );
+									//callback(msg);
+									var reg = ~/^\s*(.+):([0-9]+):\s*(characters*|lines)\s([0-9]+)(-([0-9]+))$/i;
+									if( reg.match( str ) ) {
+										var path = Atom.project.relativizePath( reg.matched(1) )[1];
+										var line = Std.parseInt( reg.matched(2) );
+										var start = Std.parseInt( reg.matched(4) );
+										var end = Std.parseInt( reg.matched(6) );
+										callback( { path: path, line: line, start: start, end: end } );
+										//statusbar.setMeta( path+':'+line+' '+start+'-'+end );
+									}
+								}
+							},
+							function(err){
+							}
+						);
+					}
+					*/
+					/*
+					editor.onDidChangeCursorPosition( function(e){
+						getPosition( e.newBufferPosition, function(pos){
+							trace(pos);
+						} );
 					});
 					*/
+					/*
+					editor.onDidChange( function(){
+						getPosition( editor.getCursorBufferPosition(), function(pos){
+							trace(pos);
+						} );
+					});
+					*/
+
+					//TODO usage completion -> highlight
+					//editor.onDidChangeSelectionRange( function(e){
+					//	trace( e.selection.getText() );
+					//});
 				}
-			}) );
+			}));
 		});
 	}
 
@@ -215,6 +205,9 @@ class IDE {
 		disposables.dispose();
 		server.stop();
 	}
+
+	public static inline function getConfig<T>( id : String ) : T
+		return Atom.config.get( 'xxx.$id' );
 
 	public static inline function onSelectHxml( h : File->Void )
 		return emitter.on( EVENT_SELECT_HXML, h );
@@ -252,9 +245,7 @@ class IDE {
 	}
 
 	static function searchHxmlFiles( ?paths : Array<String>, maxDepth = 3, callback : Array<String>->Void ) {
-
 		if( paths == null ) paths = Atom.project.getPaths();
-
 		var walk : String->(Array<String>->Void)->?Int->Void;
 		walk = function( dir : String, callback : Array<String>->Void, depth = 0 ) {
 			var results = new Array<String>();
@@ -288,7 +279,6 @@ class IDE {
 				}
 			});
 		}
-
 		var found = new Array<String>();
 		var pathsSearched = 0;
 		for( path in paths ) {
@@ -314,16 +304,11 @@ class IDE {
     }
 	*/
 
-	static inline function getConfig<T>( id : String ) : T {
-		return Atom.config.get( 'xxx.$id' );
-	}
-
 	static function consumeStatusBar( bar ) {
 		bar.addLeftTile( { item: statusbar.element, priority: -100 } );
 	}
 
 	static function provideAutoCompletion() {
-		trace("provideAutoCompletion");
 		return new AutoCompleteProvider();
 	}
 

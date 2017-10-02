@@ -1,17 +1,6 @@
 package xxx.view;
 
-import js.Browser.document;
-import js.html.Element;
-import js.html.AnchorElement;
-import js.html.DivElement;
-import js.html.SpanElement;
-import om.Time;
-import atom.Disposable;
-import atom.File;
-import Atom.workspace;
 import Atom.tooltips;
-
-using haxe.io.Path;
 
 @:keep
 class StatusbarView /*implements atom.Disposable*/ {
@@ -95,11 +84,9 @@ class StatusbarView /*implements atom.Disposable*/ {
 		info.addEventListener( 'click', handleClickInfo, false );
 	}
 
-	/*
 	public function setMeta( text : String ) {
 		meta.textContent = text;
 	}
-	*/
 
 	public function dispose() {
 		info.removeEventListener( 'click', handleClickInfo );

@@ -1,24 +1,6 @@
 package xxx.view;
 
-import Atom.workspace;
-import atom.Disposable;
-import atom.File;
-import atom.Panel;
-import atom.Point;
-import atom.Range;
-import atom.TextEditor;
-import js.Browser.document;
-import js.html.AnchorElement;
-import js.html.DivElement;
-import js.html.Element;
-import js.html.LIElement;
-import js.html.OListElement;
-import js.html.SpanElement;
-import om.Time;
 import om.haxe.ErrorMessage;
-
-using StringTools;
-using haxe.io.Path;
 
 private class ErrorMessageView {
 
