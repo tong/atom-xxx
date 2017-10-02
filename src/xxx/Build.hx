@@ -6,27 +6,36 @@ import om.haxe.ErrorMessage;
 using StringTools;
 using haxe.io.Path;
 
+@:enum abstract EventType(String) to String {
+	var start = "start";
+	var message = "message";
+	var error = "error";
+	var end = "end";
+}
+
 class Build extends atom.Emitter {
 
-	static inline var EVENT_START = 'start';
-	static inline var EVENT_MESSAGE = 'message';
-	static inline var EVENT_ERROR = 'error';
-	static inline var EVENT_END = 'end';
-
 	public var hxml(default,null) : File;
+	public var args(default,null) : Array<String>;
     //public var active(default,null) : Bool;
     //public var time(default,null) : Float;
-	public var args(default,null) : Array<String>;
 
 	public function new( hxml : File ) {
 		super();
 		this.hxml = hxml;
     }
 
-	public inline function onStart( h : Void->Void ) return on( EVENT_START, h );
-	public inline function onMessage( h : String->Void ) return on( EVENT_MESSAGE, h );
-	public inline function onError( h : String->Void ) return on( EVENT_ERROR, h );
-	public inline function onEnd( h : Int->Void ) return on( EVENT_END, h );
+	public inline function onStart( h : Void->Void )
+		return on( EventType.start, h );
+
+	public inline function onMessage( h : String->Void )
+		return on( message, h );
+
+	public inline function onError( h : String->Void )
+		return on( EventType.error, h );
+
+	public inline function onEnd( h : Int->Void )
+		return on( EventType.end, h );
 
 	public function start( verbose = false ) {
 
@@ -39,20 +48,20 @@ class Build extends atom.Emitter {
 
 		IDE.server.query( args,
 			function(res){
-				emit( EVENT_END, 0 );
+				emit( end, 0 );
 			},
 			function(err){
 				//var str : String = err.trim();
 				//var err = ErrorMessage.parse( str );
-				emit( EVENT_ERROR, err.trim() );
-				emit( EVENT_END, null );
+				emit( EventType.error, err.trim() );
+				emit( EventType.end, null );
 			},
 			function(msg){
-				emit( EVENT_MESSAGE, msg );
+				emit( EventType.message, msg );
 			}
 		);
 
-		emit( EVENT_START, null );
+		emit( EventType.start, null );
 	}
 
 }
