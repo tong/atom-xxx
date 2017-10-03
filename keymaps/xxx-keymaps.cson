@@ -2,3 +2,5 @@
     'cmd-b': 'xxx:build'
 '.platform-win32,.platform-linux atom-workspace':
     'ctrl-b': 'xxx:build'
+'atom-text-editor':
+    'ctrl-shift-G': 'xxx:goto'

@@ -1,4 +1,5 @@
 
+import Atom.notifications;
 import Atom.workspace;
 import atom.CompositeDisposable;
 import atom.Disposable;

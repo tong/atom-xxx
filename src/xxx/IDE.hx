@@ -39,33 +39,34 @@ class IDE {
 		disposables = new CompositeDisposable();
 
 		emitter = new Emitter();
-		//disposables.add( emitter = new Emitter() );
+		//disposables.add( cast emitter );
 
 		statusbar = new StatusbarView();
 
 		projectPaths = Atom.project.getPaths();
 		server = new LanguageServer( getConfig( 'haxe_path' ), #if debug true #else false #end );
 
+		//var log = new xxx.view.ServerLogView();
+		//log.show();
+
+		//disposables.add( workspace.addOpener( openURI ) );
+
 		delay( function() {
 
 			server.start( function(err) {
-
 				if( err != null ) {
 					notifications.addWarning( err );
 				} else {
-
 					disposables.add( commands.add( 'atom-workspace', 'xxx:build', function(e) {
-
 						var treeViewFile : String = e.target.getAttribute( 'data-path' );
 						if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
 							if( hxml != null && treeViewFile != hxml.getPath() ) {
 								selectHxml( treeViewFile );
 							}
 						}
-
 						build();
 					}));
-
+					disposables.add( commands.add( 'atom-workspace', 'xxx:goto', function(e) goto() ) );
 					/*
 					disposables.add( commands.add( 'atom-workspace', 'xxx:build-all', function(e) {
 						var selectedHxmlFile = hxml.getPath();
@@ -94,6 +95,10 @@ class IDE {
 			} else {
 				selectHxml( found[0] );
 			}
+
+			build();
+
+			//Atom.commands.add( 'atom-workspace', 'xxx:goto', goto );
 
 			/*
 			disposables.add( commands.add( 'atom-workspace', 'xxx:select-hxml', function(e) {
@@ -142,7 +147,7 @@ class IDE {
 				projectPaths = paths;
 			}) );
 
-			disposables.add( Atom.workspace.observeTextEditors( function(editor:TextEditor){
+			disposables.add( workspace.observeTextEditors( function(editor:TextEditor){
 				var path = editor.getPath();
 				if( path != null && haxe.io.Path.extension( path ) == 'hx' ) {
 
@@ -201,19 +206,80 @@ class IDE {
         };
     }
 
+	/*
+	static function deserialize( state ) {
+		return new xxx.view.DebugView( state );
+	}
+	*/
+
 	static function deactivate() {
 		disposables.dispose();
 		server.stop();
 	}
 
-	public static inline function getConfig<T>( id : String ) : T
-		return Atom.config.get( 'xxx.$id' );
+	/*
+	static function openURI( uri : String ) {
+		var ext = uri.extension();
+		if( ext == 'hxml' ) {
+			var debugger = new xxx.view.DebugView( { path: uri } );
+            //disposables.add( untyped preview );
+            return debugger;
+		}
+		return null;
+	}
+	*/
+
+	static function goto() {
+		var editor : TextEditor = workspace.getActiveTextEditor();
+		if( editor == null )
+			return;
+		var cursorPos = editor.getCursorBufferPosition();
+		var line = editor.getTextInBufferRange(	new Range( new Point(cursorPos.row,0), cursorPos ) );
+		//TODO
+		/*
+		trace(line);
+		var REGEX_ENDS_WITH_DOT_IDENTIFIER = ~/\.([a-zA-Z_0-9]*)$/;
+		if( !REGEX_ENDS_WITH_DOT_IDENTIFIER.match( line ) ) {
+			return;
+		}
+		var postPrefix = REGEX_ENDS_WITH_DOT_IDENTIFIER.matched(1);
+		var pos = cursorPos.copy();
+		pos.column -= (postPrefix.length-1);
+		var service = new AutoComplete( editor );
+		service.position( pos ).then( function(e:om.haxe.Message){
+			trace(e);
+			workspace.open( e.path, {
+				initialLine: e.line,
+				initialColumn: e.start,
+				activatePane: true,
+			} );
+
+
+		});
+		*/
+		/*
+		var prefix : String;
+		var prefixPosition = cursorPos.copy();
+		var replacementPrefix : String;
+		var EXPR_PREFIX_FIELD = ~/\.([a-zA-Z_][a-zA-Z_0-9]*)$/;
+		if( EXPR_PREFIX_FIELD.match( line ) ) {
+			prefix = '.';
+			replacementPrefix = EXPR_PREFIX_FIELD.matched( 1 );
+			prefixPosition.column -= replacementPrefix.length;
+
+			trace(prefix);
+		}
+		*/
+	}
 
 	public static inline function onSelectHxml( h : File->Void )
 		return emitter.on( EVENT_SELECT_HXML, h );
 
 	public static inline function onBuild( h : Build->Void )
 		return emitter.on( EVENT_BUILD, h );
+
+	public static inline function getConfig<T>( id : String ) : T
+		return Atom.config.get( 'xxx.$id' );
 
 	public static function selectHxml( path : String ) {
 		if( path == null ) {
@@ -238,13 +304,13 @@ class IDE {
 			return null;
 		}
 		var build = new Build( hxml );
-		var view = new xxx.view.BuildView( build );
+		var view = new BuildView( build );
 		emitter.emit( EVENT_BUILD, build );
 		build.start();
 		return build;
 	}
 
-	static function searchHxmlFiles( ?paths : Array<String>, maxDepth = 3, callback : Array<String>->Void ) {
+	static function searchHxmlFiles( ?paths : Array<String>, maxDepth = 2, callback : Array<String>->Void ) {
 		if( paths == null ) paths = Atom.project.getPaths();
 		var walk : String->(Array<String>->Void)->?Int->Void;
 		walk = function( dir : String, callback : Array<String>->Void, depth = 0 ) {

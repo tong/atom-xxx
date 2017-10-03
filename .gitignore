@@ -1,5 +1,6 @@
 _*
 data/
+doc/*.xml
 lib/*.js.map
 test/
 *.zip
