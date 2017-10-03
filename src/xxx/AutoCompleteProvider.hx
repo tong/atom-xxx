@@ -60,7 +60,7 @@ class AutoCompleteProvider {
 
 			trace( 'PREFIX = ['+prefix+']' );
 
-			var service = new AutoComplete( editor );
+			var service = new CompilerService( editor );
 
 			switch prefix {
 

@@ -11,7 +11,7 @@ private typedef I = {
 }
 */
 
-class AutoComplete {
+class CompilerService {
 
 	public var editor(default,null) : TextEditor;
 

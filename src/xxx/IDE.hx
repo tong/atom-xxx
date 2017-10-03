@@ -310,8 +310,9 @@ class IDE {
 		return build;
 	}
 
-	static function searchHxmlFiles( ?paths : Array<String>, maxDepth = 2, callback : Array<String>->Void ) {
+	static function searchHxmlFiles( ?paths : Array<String>, ?maxDepth : Int, callback : Array<String>->Void ) {
 		if( paths == null ) paths = Atom.project.getPaths();
+		if( maxDepth == null ) maxDepth = getConfig( 'hxml_search_depth' );
 		var walk : String->(Array<String>->Void)->?Int->Void;
 		walk = function( dir : String, callback : Array<String>->Void, depth = 0 ) {
 			var results = new Array<String>();

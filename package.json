@@ -22,15 +22,24 @@
         },
         "haxe_server_startdelay": {
             "order": 2,
-            "title": "Haxe Server Activation Delay",
+            "title": "Server Activation Delay",
             "description": "The delay in seconds before starting the haxe server.",
             "type": "integer",
             "minimum": 0,
             "maximum": 5,
             "default": 1
         },
-        "autocomplete": {
+        "hxml_search_depth": {
             "order": 3,
+            "title": "Hxml Search Depth",
+            "description": "Filesystem depth to search for hxml files",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "default": 2
+        },
+        "autocomplete": {
+            "order": 4,
             "type": "object",
             "properties": {
                 "enabled": {
