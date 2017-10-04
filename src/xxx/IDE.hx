@@ -1,11 +1,5 @@
 package xxx;
 
-import Atom.commands;
-import Atom.notifications;
-import atom.Directory;
-import atom.File;
-import haxe.Timer.delay;
-import js.node.Fs;
 import om.haxe.LanguageServer;
 import xxx.view.BuildView;
 import xxx.view.StatusbarView;
@@ -15,6 +9,11 @@ using haxe.io.Path;
 @:keep
 @:expose
 class IDE {
+
+	public static inline var COLOR_HAXE_1 = '#F68712';
+	public static inline var COLOR_HAXE_2 = '#F47216';
+	public static inline var COLOR_HAXE_3 = '#F1471D';
+	public static inline var COLOR_HAXE_4 = '#FFF200';
 
 	static inline function __init__() {
 		untyped module.exports = xxx.IDE;
@@ -39,48 +38,56 @@ class IDE {
 		disposables = new CompositeDisposable();
 
 		emitter = new Emitter();
-		//disposables.add( cast emitter );
+		//? disposables.add( cast emitter );
 
 		statusbar = new StatusbarView();
 
 		projectPaths = Atom.project.getPaths();
 		server = new LanguageServer( getConfig( 'haxe_path' ), #if debug true #else false #end );
 
-		//var log = new xxx.view.ServerLogView();
-		//log.show();
-
 		//disposables.add( workspace.addOpener( openURI ) );
 
+		/*
 		delay( function() {
 
-			server.start( function(err) {
-				if( err != null ) {
-					notifications.addWarning( err );
-				} else {
-					disposables.add( commands.add( 'atom-workspace', 'xxx:build', function(e) {
-						var treeViewFile : String = e.target.getAttribute( 'data-path' );
-						if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
-							if( hxml != null && treeViewFile != hxml.getPath() ) {
-								selectHxml( treeViewFile );
-							}
-						}
-						build();
-					}));
-					disposables.add( commands.add( 'atom-workspace', 'xxx:goto', function(e) goto() ) );
-					/*
-					disposables.add( commands.add( 'atom-workspace', 'xxx:build-all', function(e) {
-						var selectedHxmlFile = hxml.getPath();
-						for( file in hxmlFiles ) {
-							selectHxml( file );
-							build();
-						}
-						if( selectedHxmlFile != null ) selectHxml( selectedHxmlFile );
-					}));
-					*/
-				}
-			});
+			server.start(
+				function(err) {
+					if( err != null ) {
+						notifications.addWarning( err );
+					} else {
 
-		}, getConfig( 'haxe_server_startdelay' ) );
+						disposables.add( commands.add( 'atom-workspace', 'xxx:build', function(e) {
+							var treeViewFile : String = e.target.getAttribute( 'data-path' );
+							if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
+								if( hxml != null && treeViewFile != hxml.getPath() ) {
+									selectHxml( treeViewFile );
+								}
+							}
+							build();
+						}));
+
+						disposables.add( commands.add( 'atom-workspace', 'xxx:goto', function(e) goto() ) );
+						/*
+						disposables.add( commands.add( 'atom-workspace', 'xxx:build-all', function(e) {
+							var selectedHxmlFile = hxml.getPath();
+							for( file in hxmlFiles ) {
+								selectHxml( file );
+								build();
+							}
+							if( selectedHxmlFile != null ) selectHxml( selectedHxmlFile );
+						}));
+						* /
+
+						build();
+					}
+				},
+				function(msg) {
+					console.log( '%c'+msg, 'color:${IDE.COLOR_HAXE_3};' );
+				}
+			);
+
+		}, Std.int( getConfig( 'haxe_server_startdelay' ) * 1000 ) );
+		*/
 
 		searchHxmlFiles( function( found:Array<String> ) {
 
@@ -96,7 +103,47 @@ class IDE {
 				selectHxml( found[0] );
 			}
 
-			build();
+			delay( function() {
+
+				server.start(
+					function(err) {
+						if( err != null ) {
+							notifications.addWarning( err );
+						} else {
+
+							disposables.add( commands.add( 'atom-workspace', 'xxx:build', function(e) {
+								var treeViewFile : String = e.target.getAttribute( 'data-path' );
+								if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
+									if( hxml != null && treeViewFile != hxml.getPath() ) {
+										selectHxml( treeViewFile );
+									}
+								}
+								build();
+							}));
+
+							disposables.add( commands.add( 'atom-workspace', 'xxx:goto', function(e) goto() ) );
+							/*
+							disposables.add( commands.add( 'atom-workspace', 'xxx:build-all', function(e) {
+								var selectedHxmlFile = hxml.getPath();
+								for( file in hxmlFiles ) {
+									selectHxml( file );
+									build();
+								}
+								if( selectedHxmlFile != null ) selectHxml( selectedHxmlFile );
+							}));
+							*/
+
+							build();
+						}
+					},
+					function(msg) {
+						console.log( '%c'+msg, 'color:${IDE.COLOR_HAXE_2};' );
+					}
+				);
+
+			}, Std.int( getConfig( 'haxe_server_startdelay' ) * 1000 ) );
+
+			//build();
 
 			//Atom.commands.add( 'atom-workspace', 'xxx:goto', goto );
 
@@ -311,8 +358,10 @@ class IDE {
 	}
 
 	static function searchHxmlFiles( ?paths : Array<String>, ?maxDepth : Int, callback : Array<String>->Void ) {
+
 		if( paths == null ) paths = Atom.project.getPaths();
 		if( maxDepth == null ) maxDepth = getConfig( 'hxml_search_depth' );
+
 		var walk : String->(Array<String>->Void)->?Int->Void;
 		walk = function( dir : String, callback : Array<String>->Void, depth = 0 ) {
 			var results = new Array<String>();

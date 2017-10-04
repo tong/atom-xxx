@@ -1,19 +1,17 @@
 package xxx;
 
-import atom.File;
 import om.haxe.ErrorMessage;
 
-using StringTools;
 using haxe.io.Path;
 
-@:enum abstract EventType(String) to String {
+@:enum private abstract EventType(String) to String {
 	var start = "start";
 	var message = "message";
 	var error = "error";
 	var end = "end";
 }
 
-class Build extends atom.Emitter {
+class Build extends Emitter {
 
 	public var hxml(default,null) : File;
 	public var args(default,null) : Array<String>;
@@ -45,23 +43,38 @@ class Build extends atom.Emitter {
 		args = [ '--cwd', cwd ];
 		if( verbose ) args.push( '-v' );
 		args.push( hxml.getBaseName() );
+		args.push( '--times' );
+
+		//console.group( 'build' );
+		//console.group( '%c'+'haxe '+args.join(' '), 'color:${IDE.COLOR_HAXE_3};' );
+		console.log( '%c'+'haxe '+args.join(' '), 'color:${IDE.COLOR_HAXE_3};' );
 
 		IDE.server.query( args,
-			function(res){
-				emit( end, 0 );
+			function( res : String ){
+				if( res.length > 0 ) log( res );
+				//console.groupEnd();
+				emit( EventType.end, 0 );
 			},
-			function(err){
+			function( err : String ){
 				//var str : String = err.trim();
 				//var err = ErrorMessage.parse( str );
-				emit( EventType.error, err.trim() );
+				var str = err.trim();
+				if( str.length > 0 ) log( str );
+				//console.groupEnd();
+				emit( EventType.error, str );
 				emit( EventType.end, null );
 			},
-			function(msg){
+			function( msg : String ){
+				log( msg );
 				emit( EventType.message, msg );
 			}
 		);
 
 		emit( EventType.start, null );
+	}
+
+	static inline function log( data ) {
+		console.log( '%c'+data, 'color:${IDE.COLOR_HAXE_3};' );
 	}
 
 }

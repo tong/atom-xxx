@@ -1,7 +1,9 @@
 
+import Atom.commands;
 import Atom.notifications;
 import Atom.workspace;
 import atom.CompositeDisposable;
+import atom.Directory;
 import atom.Disposable;
 import atom.Emitter;
 import atom.File;
@@ -10,6 +12,7 @@ import atom.Point;
 import atom.Range;
 import atom.TextBuffer;
 import atom.TextEditor;
+import haxe.Timer.delay;
 import js.Browser.document;
 import js.Browser.console;
 import js.Promise;
@@ -19,6 +22,7 @@ import js.html.Element;
 import js.html.LIElement;
 import js.html.OListElement;
 import js.html.SpanElement;
+import js.node.Fs;
 import om.Time;
 
 using StringTools;

@@ -2,14 +2,15 @@ package xxx;
 
 import atom.autocomplete.*;
 
-/*
-private typedef I = {
+typedef Item = {
+	//var type : ItemType; //list|type
 	var n : String;
 	var k : String;
-	var t : String;
-	var d : String;
+	@:optional var t : String;
+	@:optional var d : String;
+	@:optional var p : String;
+	@:optional var c : String;
 }
-*/
 
 class CompilerService {
 
@@ -19,33 +20,55 @@ class CompilerService {
 		this.editor = editor;
 	}
 
-	public inline function callArgument( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Xml> {
+	public inline function callArgument( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
+		return query( pos, extraArgs ).then( function(items){
+			trace(items);
+			return cast items;
+		});
+	}
+
+	public inline function fieldAccess( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
+		return query( pos, extraArgs ).then( function(items){
+			//return Promise.resolve( items );
+			return cast items;
+		});
+	}
+
+	public inline function topLevel( pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
+		return query( pos, 'toplevel', extraArgs ).then( function(items){
+			return cast items;
+		});
+	}
+
+	/*
+	public inline function callArgument( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
 		return query( pos, extraArgs );
 	}
 
-	public inline function fieldAccess( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Xml> {
-		return query( pos, extraArgs ).then( function(xml:Xml){
-			return Promise.resolve( xml );
+	public inline function fieldAccess( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
+		return query( pos, extraArgs ).then( function(items){
+			return Promise.resolve( items );
 		});
 	}
 
 	public inline function position( ?pos : Point, ?extraArgs : Array<String> ) : Promise<om.haxe.Message> {
-		return query( pos, 'position', extraArgs ).then( function(xml:Xml) {
+		return query( pos, 'position', extraArgs ).then( function(items) {
 			var str = xml.elementsNamed( 'pos' ).next().firstChild().nodeValue;
 			var msg = om.haxe.Message.parse( str );
 			return Promise.resolve( msg );
 		});
 	}
 
-	public inline function topLevel( pos : Point, ?extraArgs : Array<String> ) : Promise<Xml> {
+	public inline function topLevel( pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
 		return query( pos, 'toplevel', extraArgs );
 	}
 
-	public inline function usage( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Xml> {
+	public inline function usage( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
 		return query( pos, 'usage', extraArgs );
 	}
+	*/
 
-	public function query( ?pos : Point, ?mode : String, ?extraArgs : Array<String> ) : Promise<Xml> {
+	public function query( ?pos : Point, ?mode : String, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
 
 		return new Promise( function(resolve,reject){
 
@@ -61,8 +84,51 @@ class CompilerService {
 
 			IDE.server.query( args, preText,
 				function(r) {
+
+					//var ts = Time.stamp();
 					var xml = Xml.parse( r ).firstElement();
-					resolve( xml );
+					var items = new Array<Item>();
+					switch xml.nodeName {
+					case 'list':
+						//trace(Time.stamp()-ts);
+						for( e in xml.elements() ) {
+							var fc = e.firstChild();
+							var item : Item = {
+								n: e.get('n'),
+								k: e.get('k'),
+								p: e.get('p'),
+								c: (fc != null &&
+									(fc.nodeType == Document || fc.nodeType != Element )) ? fc.nodeValue : null
+								};
+								for( e in e.elements() ) {
+									var fc = e.firstChild();
+									switch e.nodeName {
+										case 'd': item.d = (fc != null) ? fc.nodeValue : null;
+										case 't': item.t = (fc != null) ? fc.nodeValue : null;
+									}
+								}
+								items.push( item );
+							}
+					case 'type':
+						items.push({
+							d: xml.get( 'd' ),
+							t: xml.firstChild().nodeValue.trim(),
+							n: null,
+							k: null
+						});
+					}
+
+					/*
+					var ts = Time.stamp();
+					var parser = new js.html.DOMParser();
+					var xml = parser.parseFromString( r, APPLICATION_XML ).documentElement;
+					trace( xml );
+					trace( xml.children );
+					for( e in xml.children ) trace( e.nodeName );
+					trace(Time.stamp()-ts);
+					*/
+
+					resolve( items );
 					//onResult( xml );
 				},
 				function(e) {
