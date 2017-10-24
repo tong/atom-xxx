@@ -23,6 +23,7 @@ class AutoCompleteProvider {
 	public var enabled : Bool;
 
 	var disposables : CompositeDisposable;
+	var service : CompilerService;
 
 	public function new() {
 		var cfg = IDE.getConfig( 'autocomplete' );
@@ -35,8 +36,6 @@ class AutoCompleteProvider {
 
 	@:keep public function getSuggestions( req : Request ) : Promise<Array<Suggestion>> {
 
-		console.group( 'getSuggestions' );
-
 		return new Promise( function(resolve,reject) {
 
 			if( !enabled || IDE.hxml == null )
@@ -47,8 +46,8 @@ class AutoCompleteProvider {
 			var prefixPos = req.bufferPosition;
 			var prefix = req.prefix;
 			var replacementPrefix = '';
+			var line = editor.getTextInBufferRange(	new Range( new Point( prefixPos.row, 0 ), prefixPos ) );
 			//var line = editor.lineTextForBufferRow( req.bufferPosition.row );
-			var line = editor.getTextInBufferRange(	new Range( new Point(prefixPos.row,0), prefixPos ) );
 
 			if( EXPR_PREFIX_FIELD.match( line ) ) {
 				prefix = '.';
@@ -62,7 +61,10 @@ class AutoCompleteProvider {
 
 			console.log( 'PREFIX = [$prefix][$replacementPrefix]' );
 
-			var service = new CompilerService( editor );
+			//var service = new CompilerService( editor );
+			if( service == null ) service = new CompilerService( editor );
+			else service.editor = editor;
+			//var suggestions = new Array<Suggestion>();
 
 			switch prefix {
 
@@ -92,14 +94,22 @@ class AutoCompleteProvider {
 				});
 
 			case '(':
-				trace(">>>>>>>>>>>>>>>>>>");
-				return cast service.callArgument( prefixPos ).then( function(items:Array<Item>) {
-					trace(items);
-					var suggestions = new Array<Suggestion>();
+				return cast service.callArgument( prefixPos ).then( function(item:Item) {
+					//TODO
+					/*
+					trace( item );
+					var sug : Suggestion = {
+						displayText: item.t,
+						description: item.d,
+						snippet: item.t,
+					};
+					return resolve( [sug] );
+					*/
+					/*
 					var sug = createSuggestion( items[0] );
-					trace(sug);
 					suggestions.push( sug );
 					return resolve( suggestions );
+					*/
 				});
 				//TODO
 				/*
@@ -128,24 +138,74 @@ class AutoCompleteProvider {
 
 				// --- Toplevel completion
 				return cast service.topLevel( prefixPos ).then( function(items:Array<Item>) {
-					var suggestions = new Array<Suggestion>();
+					var suggestions = new Map<String,Array<Suggestion>>();
 					for( item in items ) {
-						item.n = item.p;
-						if( item.n == null ) item.n = item.c;
-						if( prefix.length > 0 && !item.n.startsWith( prefix ) )
+						//trace( item );
+						var name = switch item.k {
+						case 'enum','literal','local','package','static': item.c;
+						case 'type': item.p;
+						default: null;
+						}
+						if( prefix.length > 0 &&
+							prefix.trim().length != 0 &&
+							name != null && !name.startsWith( prefix ) )
 							continue;
-						var sug = createSuggestion( item );
-						suggestions.push( sug );
+						var sug : Suggestion = {
+							text: name,
+							type: item.k,
+							description: formatDoc( item.d )
+						};
+						//sug.text = item.p;
+						switch item.k {
+						case 'enum':
+							sug.type = 'enum';
+							//sug.text = item.c;
+							sug.rightLabel = item.t;
+						case 'global':
+							sug.type = 'global';
+							//sug.text = item.c;
+						case 'literal':
+							sug.type = 'keyword';
+							//sug.text = item.c;
+						case 'local':
+							sug.type = 'value';
+							//sug.text = item.c;
+							sug.rightLabel = item.t;
+						case 'package':
+							//sug.text = item.c;
+						case 'static':
+							//var funType = CompletionParser.parseFunType( item.t );
+							sug.displayText = item.c+'()';
+							sug.rightLabel = item.t;
+							sug.snippet = item.c+'()$0';
+							sug.type = 'method';
+						case 'type':
+							//sug.text = item.p;
+						default:
+							console.warn( "TODO: "+item );
+						}
+						if( !suggestions.exists( item.k ) ) suggestions.set( item.k, [] );
+						suggestions.get( item.k ).push( sug );
 					}
-					return resolve( suggestions );
+					var result = new Array<Suggestion>();
+					for( list in suggestions ) {
+						list.sort( (a,b) -> return (a.text > b.text) ? 1 : (a.text < b.text) ? -1 : 0  );
+						//result = result.concat( list );
+					}
+					if( suggestions.exists( 'static' ) ) result = result.concat( suggestions.get( 'static' ) );
+					if( suggestions.exists( 'local' ) ) result = result.concat( suggestions.get( 'local' ) );
+					if( suggestions.exists( 'global' ) ) result = result.concat( suggestions.get( 'global' ) );
+					if( suggestions.exists( 'literal' ) ) result = result.concat( suggestions.get( 'literal' ) );
+					if( suggestions.exists( 'type' ) ) result = result.concat( suggestions.get( 'type' ) );
+					if( suggestions.exists( 'package' ) ) result = result.concat( suggestions.get( 'package' ) );
+					if( suggestions.exists( 'enum' ) ) result = result.concat( suggestions.get( 'enum' ) );
+					return resolve( result );
 				});
 			}
-		} ).then( function(suggestions){
-			console.groupEnd();
-			return cast suggestions;
-		} ).catchError( function(e:String){
+		//} ).then( function(suggestions){
+		//	return cast suggestions;
+		} ).catchError( function(e){
 			console.error( e );
-			console.groupEnd();
 			return Promise.resolve( [] );
 		});
 	}
@@ -158,9 +218,12 @@ class AutoCompleteProvider {
 		disposables.dispose();
 	}
 
+	// field access
 	static function createSuggestion( item : Item, completeFunArgs = true ) : Suggestion {
 		var sug : Suggestion = { type: item.k, text: item.n, description: formatDoc( item.d ) };
 		switch item.k {
+		case 'literal':
+			sug.type = 'keyword';
 		case 'method':
 			//sug.type = 'method';
 			var displayText = item.n+'(';
@@ -191,18 +254,17 @@ class AutoCompleteProvider {
 			sug.displayText = displayText;
 			sug.snippet = if( completeFunArgs ) snippet else item.n;
 			sug.text = null;
-		case 'var':
-			sug.rightLabel = item.t;
 		case 'static':
 			sug.type = 'method';
 			sug.snippet = item.n+'()$0';
 			sug.displayText = item.n+'()';
-		case 'literal':
-			sug.type = 'keyword';
+		case 'var':
+			sug.type = 'variable';
+			sug.rightLabel = item.t;
 		case null:
 			//TODO
+			trace("TODO");
 			sug.text = item.t;
-
 		}
 		return sug;
 	}

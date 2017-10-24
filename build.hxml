@@ -6,8 +6,8 @@ xxx.IDE
 -lib om.net
 -cp src
 -dce full
--debug
+#-debug
 -D hxnodejs_no_version_warning
-#--no-traces
-#-lib closure
-#-D closure_overwrite
+--no-traces
+-lib closure
+-D closure_overwrite

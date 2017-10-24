@@ -45,7 +45,6 @@ class Build extends Emitter {
 		args.push( hxml.getBaseName() );
 		args.push( '--times' );
 
-		//console.group( 'build' );
 		//console.group( '%c'+'haxe '+args.join(' '), 'color:${IDE.COLOR_HAXE_3};' );
 		console.log( '%c'+'haxe '+args.join(' '), 'color:${IDE.COLOR_HAXE_3};' );
 

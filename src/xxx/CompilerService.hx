@@ -3,9 +3,8 @@ package xxx;
 import atom.autocomplete.*;
 
 typedef Item = {
-	//var type : ItemType; //list|type
-	var n : String;
-	var k : String;
+	@:optional var n : String;
+	@:optional var k : String;
 	@:optional var t : String;
 	@:optional var d : String;
 	@:optional var p : String;
@@ -14,43 +13,60 @@ typedef Item = {
 
 class CompilerService {
 
-	public var editor(default,null) : TextEditor;
+	public var editor : TextEditor;
 
 	public function new( editor : TextEditor ) {
 		this.editor = editor;
 	}
 
-	public inline function callArgument( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
-		return query( pos, extraArgs ).then( function(items){
-			trace(items);
-			return cast items;
+	public inline function callArgument( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Item> {
+		return query( pos, extraArgs ).then( function(xml:Element){
+			var d = xml.getAttribute('d');
+			return cast {
+				d: (d == null) ? null : d.trim(),
+				t: xml.childNodes[0].nodeValue.trim()
+			};
 		});
 	}
 
 	public inline function fieldAccess( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
-		return query( pos, extraArgs ).then( function(items){
-			//return Promise.resolve( items );
+		return query( pos, extraArgs ).then( function(xml:Element){
+			var items : Array<Item> = [];
+			for( i in 0...xml.children.length ) {
+				var e = xml.children[i];
+				var t = e.getElementsByTagName( 't' )[0].childNodes[0];
+				var d = e.getElementsByTagName( 'd' )[0].childNodes[0];
+				items.push( {
+					n: e.getAttribute('n'),
+					k: e.getAttribute('k'),
+					t: (t == null) ? null : t.nodeValue,
+					d: (d == null) ? null : d.nodeValue.trim()
+				} );
+			}
 			return cast items;
 		});
 	}
 
 	public inline function topLevel( pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
-		return query( pos, 'toplevel', extraArgs ).then( function(items){
+		return query( pos, 'toplevel', extraArgs ).then( function(xml:Element){
+			var items : Array<Item> = [];
+			for( i in 0...xml.children.length ) {
+				var e = xml.children[i];
+				var d = e.getAttribute('d');
+				items.push( {
+					k: e.getAttribute('k'),
+					n: e.getAttribute('n'),
+					t: e.getAttribute('t'),
+					d: (d == null) ? null : d.trim(),
+					p: e.getAttribute('p'),
+					c: e.childNodes[0].nodeValue
+				} );
+			}
 			return cast items;
 		});
 	}
 
 	/*
-	public inline function callArgument( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
-		return query( pos, extraArgs );
-	}
-
-	public inline function fieldAccess( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
-		return query( pos, extraArgs ).then( function(items){
-			return Promise.resolve( items );
-		});
-	}
-
 	public inline function position( ?pos : Point, ?extraArgs : Array<String> ) : Promise<om.haxe.Message> {
 		return query( pos, 'position', extraArgs ).then( function(items) {
 			var str = xml.elementsNamed( 'pos' ).next().firstChild().nodeValue;
@@ -59,16 +75,13 @@ class CompilerService {
 		});
 	}
 
-	public inline function topLevel( pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
-		return query( pos, 'toplevel', extraArgs );
-	}
-
 	public inline function usage( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
 		return query( pos, 'usage', extraArgs );
 	}
 	*/
 
-	public function query( ?pos : Point, ?mode : String, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
+	//public function query( ?pos : Point, ?mode : String, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
+	public function query( ?pos : Point, ?mode : String, ?extraArgs : Array<String> ) : Promise<Element> {
 
 		return new Promise( function(resolve,reject){
 
@@ -84,59 +97,18 @@ class CompilerService {
 
 			IDE.server.query( args, preText,
 				function(r) {
-
-					//var ts = Time.stamp();
-					var xml = Xml.parse( r ).firstElement();
-					var items = new Array<Item>();
-					switch xml.nodeName {
-					case 'list':
-						//trace(Time.stamp()-ts);
-						for( e in xml.elements() ) {
-							var fc = e.firstChild();
-							var item : Item = {
-								n: e.get('n'),
-								k: e.get('k'),
-								p: e.get('p'),
-								c: (fc != null &&
-									(fc.nodeType == Document || fc.nodeType != Element )) ? fc.nodeValue : null
-								};
-								for( e in e.elements() ) {
-									var fc = e.firstChild();
-									switch e.nodeName {
-										case 'd': item.d = (fc != null) ? fc.nodeValue : null;
-										case 't': item.t = (fc != null) ? fc.nodeValue : null;
-									}
-								}
-								items.push( item );
-							}
-					case 'type':
-						items.push({
-							d: xml.get( 'd' ),
-							t: xml.firstChild().nodeValue.trim(),
-							n: null,
-							k: null
-						});
-					}
-
-					/*
-					var ts = Time.stamp();
 					var parser = new js.html.DOMParser();
 					var xml = parser.parseFromString( r, APPLICATION_XML ).documentElement;
-					trace( xml );
-					trace( xml.children );
-					for( e in xml.children ) trace( e.nodeName );
-					trace(Time.stamp()-ts);
-					*/
-
-					resolve( items );
-					//onResult( xml );
+					resolve( xml );
 				},
 				function(e) {
 					console.warn( e );
 					//if( onError != null ) onError( e );
 				},
 				function(m) {
+
 					console.warn(m);
+					reject(m);
 					//reject( m );
 				}
 			);

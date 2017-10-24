@@ -133,11 +133,11 @@ class IDE {
 							}));
 							*/
 
-							build();
+							//build();
 						}
 					},
 					function(msg) {
-						console.log( '%c'+msg, 'color:${IDE.COLOR_HAXE_2};' );
+			//		 	console.log( '%c'+msg, 'color:${IDE.COLOR_HAXE_2};' );
 					}
 				);
 
