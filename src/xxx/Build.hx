@@ -49,22 +49,27 @@ class Build extends Emitter {
 		console.log( '%c'+'haxe '+args.join(' '), 'color:${IDE.COLOR_HAXE_3};' );
 
 		IDE.server.query( args,
-			function( res : String ){
-				if( res.length > 0 ) log( res );
+			function( res : String ) {
+				//if( res.length > 0 ) log( res );
 				//console.groupEnd();
 				emit( EventType.end, 0 );
 			},
-			function( err : String ){
+			function( err : String ) {
+				trace(err);
 				//var str : String = err.trim();
 				//var err = ErrorMessage.parse( str );
 				var str = err.trim();
-				if( str.length > 0 ) log( str );
+				//if( str.length > 0 )
+				console.log( str );
 				//console.groupEnd();
 				emit( EventType.error, str );
 				emit( EventType.end, null );
 			},
-			function( msg : String ){
+			function( msg : String ) {
+				trace(msg);
+				/*
 				log( msg );
+				*/
 				emit( EventType.message, msg );
 			}
 		);

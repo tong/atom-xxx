@@ -25,5 +25,5 @@ import js.html.SpanElement;
 import js.node.Fs;
 import om.Time;
 
-using StringTools;
 using haxe.io.Path;
+using om.StringTools;

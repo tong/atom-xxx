@@ -2,9 +2,7 @@ package xxx;
 
 import atom.autocomplete.*;
 import om.haxe.CompletionParser;
-import xxx.CompilerService;
-
-using om.util.StringUtil;
+import xxx.CompletionService;
 
 class AutoCompleteProvider {
 
@@ -12,6 +10,8 @@ class AutoCompleteProvider {
 	static var EXPR_PREFIX_FIELD = ~/\.([a-zA-Z_][a-zA-Z_0-9]*)$/;
 	static var EXPR_PREFIX_CALL = ~/\(( *)$/;
 	static var EXPR_TYPEPATH = ~/(import|using)\s+([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)(?:\s+(?:in|as)\s+([a-zA-Z0-9_]+))?/g;
+
+	public dynamic function onError( error : String ) {}
 
 	@:keep public var selector = '.source.haxe';
 	@:keep public var disableForSelector = '.source.haxe .comment';
@@ -23,7 +23,7 @@ class AutoCompleteProvider {
 	public var enabled : Bool;
 
 	var disposables : CompositeDisposable;
-	var service : CompilerService;
+	var service : CompletionService;
 
 	public function new() {
 		var cfg = IDE.getConfig( 'autocomplete' );
@@ -34,7 +34,8 @@ class AutoCompleteProvider {
 		} ) );
 	}
 
-	@:keep public function getSuggestions( req : Request ) : Promise<Array<Suggestion>> {
+	@:keep
+	public function getSuggestions( req : Request ) : Promise<Array<Suggestion>> {
 
 		return new Promise( function(resolve,reject) {
 
@@ -59,12 +60,17 @@ class AutoCompleteProvider {
 				prefixPos.column -= replacementPrefix.length;
 			}
 
-			console.log( 'PREFIX = [$prefix][$replacementPrefix]' );
+			trace( 'PREFIX = [$prefix][$replacementPrefix]' );
 
-			//var service = new CompilerService( editor );
-			if( service == null ) service = new CompilerService( editor );
+			if( service == null ) service = new CompletionService( editor );
 			else service.editor = editor;
 			//var suggestions = new Array<Suggestion>();
+
+			/*
+			service.usage( prefixPos ).then( function(item) {
+				trace( item );
+			});
+			*/
 
 			switch prefix {
 
@@ -142,7 +148,7 @@ class AutoCompleteProvider {
 					for( item in items ) {
 						//trace( item );
 						var name = switch item.k {
-						case 'enum','literal','local','package','static': item.c;
+						case 'enum','enumabstract','literal','local','member','package','static': item.c;
 						case 'type': item.p;
 						default: null;
 						}
@@ -155,24 +161,25 @@ class AutoCompleteProvider {
 							type: item.k,
 							description: formatDoc( item.d )
 						};
-						//sug.text = item.p;
 						switch item.k {
+						case 'enumabstract':
+							sug.type = 'enum';
+							sug.rightLabel = item.t;
 						case 'enum':
 							sug.type = 'enum';
-							//sug.text = item.c;
 							sug.rightLabel = item.t;
 						case 'global':
 							sug.type = 'global';
-							//sug.text = item.c;
 						case 'literal':
 							sug.type = 'keyword';
-							//sug.text = item.c;
 						case 'local':
 							sug.type = 'value';
-							//sug.text = item.c;
+							sug.rightLabel = item.t;
+						case 'member':
+							sug.type = 'member';
 							sug.rightLabel = item.t;
 						case 'package':
-							//sug.text = item.c;
+							sug.type = 'package';
 						case 'static':
 							//var funType = CompletionParser.parseFunType( item.t );
 							sug.displayText = item.c+'()';
@@ -180,7 +187,8 @@ class AutoCompleteProvider {
 							sug.snippet = item.c+'()$0';
 							sug.type = 'method';
 						case 'type':
-							//sug.text = item.p;
+							sug.type = 'type';
+							sug.text = item.p;
 						default:
 							console.warn( "TODO: "+item );
 						}
@@ -190,31 +198,37 @@ class AutoCompleteProvider {
 					var result = new Array<Suggestion>();
 					for( list in suggestions ) {
 						list.sort( (a,b) -> return (a.text > b.text) ? 1 : (a.text < b.text) ? -1 : 0  );
-						//result = result.concat( list );
 					}
-					if( suggestions.exists( 'static' ) ) result = result.concat( suggestions.get( 'static' ) );
 					if( suggestions.exists( 'local' ) ) result = result.concat( suggestions.get( 'local' ) );
+					if( suggestions.exists( 'static' ) ) result = result.concat( suggestions.get( 'static' ) );
 					if( suggestions.exists( 'global' ) ) result = result.concat( suggestions.get( 'global' ) );
 					if( suggestions.exists( 'literal' ) ) result = result.concat( suggestions.get( 'literal' ) );
 					if( suggestions.exists( 'type' ) ) result = result.concat( suggestions.get( 'type' ) );
 					if( suggestions.exists( 'package' ) ) result = result.concat( suggestions.get( 'package' ) );
 					if( suggestions.exists( 'enum' ) ) result = result.concat( suggestions.get( 'enum' ) );
 					return resolve( result );
-				});
+				}).catchError( function(e){
+					//TODO
+					onError( e );
+					//trace(e);
+				} );
 			}
 		//} ).then( function(suggestions){
 		//	return cast suggestions;
 		} ).catchError( function(e){
 			console.error( e );
+			//return resolve( [] );
 			return Promise.resolve( [] );
 		});
 	}
 
-	@:keep public function onDidInsertSuggestion( suggestion : SuggestionInsert ) {
+	@:keep
+	public function onDidInsertSuggestion( suggestion : SuggestionInsert ) {
 		//trace("TODO onDidInsertSuggestion");
 	}
 
-	@:keep public function dispose() {
+	@:keep
+	public function dispose() {
 		disposables.dispose();
 	}
 
