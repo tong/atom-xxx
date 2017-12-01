@@ -12,6 +12,7 @@ import atom.Point;
 import atom.Range;
 import atom.TextBuffer;
 import atom.TextEditor;
+import haxe.Timer;
 import haxe.Timer.delay;
 import js.Browser.document;
 import js.Browser.console;
@@ -23,6 +24,7 @@ import js.html.LIElement;
 import js.html.OListElement;
 import js.html.SpanElement;
 import js.node.Fs;
+import om.ArrayTools;
 import om.Time;
 
 using haxe.io.Path;

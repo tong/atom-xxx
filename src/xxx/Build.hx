@@ -43,7 +43,7 @@ class Build extends Emitter {
 		args = [ '--cwd', cwd ];
 		if( verbose ) args.push( '-v' );
 		args.push( hxml.getBaseName() );
-		args.push( '--times' );
+	//	args.push( '--times' );
 
 		//console.group( '%c'+'haxe '+args.join(' '), 'color:${IDE.COLOR_HAXE_3};' );
 		console.log( '%c'+'haxe '+args.join(' '), 'color:${IDE.COLOR_HAXE_3};' );

@@ -1,6 +1,6 @@
 _*
 data/
-doc/*.xml
+doc/
 lib/*.js.map
 test/
 *.zip

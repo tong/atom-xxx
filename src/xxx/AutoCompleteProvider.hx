@@ -13,11 +13,11 @@ class AutoCompleteProvider {
 
 	public dynamic function onError( error : String ) {}
 
-	@:keep public var selector = '.source.haxe';
-	@:keep public var disableForSelector = '.source.haxe .comment';
-	@:keep public var suggestionPriority = 3;
-	//@:keep public var inclusionPriority = 3;
-	//@:keep public var excludeLowerPriority = true;
+	@:keep public var selector = '.source.hx';
+	@:keep public var disableForSelector = '.source.hx .comment';
+	@:keep public var excludeLowerPriority = false;
+	//@:keep public var suggestionPriority = 3;
+	//@:keep public var inclusionPriority = 1;
 	//@:keep public var filterSuggestions = true;
 
 	public var enabled : Bool;
@@ -39,7 +39,7 @@ class AutoCompleteProvider {
 
 		return new Promise( function(resolve,reject) {
 
-			if( !enabled || IDE.hxml == null )
+			if( !enabled )
 				return resolve( [] );
 
 			var editor = req.editor;

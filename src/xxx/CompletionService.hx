@@ -18,6 +18,8 @@ class CompletionService {
 	var editor : TextEditor;
 
 	var parser : DOMParser;
+	var lastQuery : Array<String>;
+	var lastQueryXml : Element;
 
 	public function new( editor : TextEditor ) {
 		this.editor = editor;
@@ -36,6 +38,8 @@ class CompletionService {
 
 	public function fieldAccess( ?pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
 		return query( pos, extraArgs ).then( function(xml:Element){
+			if( xml == null )
+				return [];
 			var items : Array<Item> = [];
 			for( i in 0...xml.children.length ) {
 				var e = xml.children[i];
@@ -54,6 +58,8 @@ class CompletionService {
 
 	public function topLevel( pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
 		return query( pos, 'toplevel', extraArgs ).then( function(xml:Element){
+			if( xml == null )
+				return [];
 			var items : Array<Item> = [];
 			for( i in 0...xml.children.length ) {
 				var e = xml.children[i];
@@ -73,7 +79,8 @@ class CompletionService {
 
 	public function usage( pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
 		return query( pos, 'usage', extraArgs ).then( function(xml:Element){
-			trace(xml );
+			if( xml == null )
+				return [];
 			for( i in 0...xml.children.length ) {
 				var e = xml.children[i];
 				trace(e);
@@ -104,18 +111,27 @@ class CompletionService {
 			//	var displayPos = editor.getPath() + '@' + index;
 			var displayPos = '${editor.getPath()}@$index';
 			if( mode != null ) displayPos += '@$mode';
-			var args = [ IDE.hxml.getPath(), '--display', displayPos ];
+			//var args = [ IDE.hxml.getPath(), '--display', displayPos ];
+			var args = [ '--display', displayPos ];
+			if( IDE.hxml != null ) args = [IDE.hxml.getPath()].concat( args );
 			if( extraArgs != null ) args = args.concat( extraArgs );
+
+			if( lastQuery != null  && ArrayTools.equals( lastQuery, args, function(a,b) return a == b ) ) {
+				return resolve( lastQueryXml );
+			}
 
 			IDE.server.query( args, preText,
 				function(r) {
 					parser = new DOMParser();
 					var xml = parser.parseFromString( r, APPLICATION_XML ).documentElement;
+					lastQuery = args;
+					lastQueryXml = xml;
 					resolve( xml );
 				},
 				function(e) {
 					console.warn( e );
-					reject( e );
+					resolve( null );
+					//reject( e );
 					//if( onError != null ) onError( e );
 				},
 				function(m) {

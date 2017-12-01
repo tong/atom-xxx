@@ -18,8 +18,8 @@ class IDE {
 	static inline var EVENT_SELECT_HXML = 'hxml_select';
 	static inline var EVENT_BUILD = 'build';
 
-	public static var server(default,null) : LanguageServer;
 	//public static var server(default,null) : CompilerService;
+	public static var server(default,null) : LanguageServer;
 	public static var hxmlFiles(default,null) : Array<String>;
 	public static var hxml(default,null) : File;
 	public static var statusbar(default,null) : StatusbarView;
@@ -58,46 +58,8 @@ class IDE {
 			}
 
 			delay( function() {
-
-				server.start(
-					function(err) {
-						if( err != null ) {
-							notifications.addWarning( err );
-						} else {
-
-							disposables.add( commands.add( 'atom-workspace', 'xxx:build', function(e) {
-								var treeViewFile : String = e.target.getAttribute( 'data-path' );
-								if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
-									if( hxml != null && treeViewFile != hxml.getPath() ) {
-										selectHxml( treeViewFile );
-									}
-								}
-								build();
-							}));
-
-							disposables.add( commands.add( 'atom-workspace', 'xxx:goto', function(e) goto() ) );
-							/*
-							disposables.add( commands.add( 'atom-workspace', 'xxx:build-all', function(e) {
-								var selectedHxmlFile = hxml.getPath();
-								for( file in hxmlFiles ) {
-									selectHxml( file );
-									build();
-								}
-								if( selectedHxmlFile != null ) selectHxml( selectedHxmlFile );
-							}));
-							*/
-
-							//build();
-						}
-					},
-					function(msg) {
-			//		 	console.log( '%c'+msg, 'color:${IDE.COLOR_HAXE_2};' );
-					}
-				);
-
+				startServer();
 			}, Std.int( getConfig( 'haxe_server_startdelay' ) * 1000 ) );
-
-			//build();
 
 			//Atom.commands.add( 'atom-workspace', 'xxx:goto', goto );
 
@@ -215,7 +177,7 @@ class IDE {
 
 	static function deactivate() {
 		disposables.dispose();
-		//server.stop();
+		server.stop();
 	}
 
 	/*
@@ -229,6 +191,45 @@ class IDE {
 		return null;
 	}
 	*/
+
+	static function startServer() {
+		server.start(
+			function(err) {
+				if( err != null ) {
+					notifications.addWarning( err );
+				} else {
+					disposables.add( commands.add( 'atom-workspace', 'xxx:build', function(e) {
+						var treeViewFile : String = e.target.getAttribute( 'data-path' );
+						if( treeViewFile != null && treeViewFile.extension() == 'hxml' ) {
+							if( hxml != null && treeViewFile != hxml.getPath() ) {
+								selectHxml( treeViewFile );
+							}
+						}
+						build();
+					}));
+					disposables.add( commands.add( 'atom-workspace', 'xxx:goto', e -> goto() ) );
+					disposables.add( commands.add( 'atom-workspace', 'xxx:restart-server', e -> {
+						server.stop();
+						Timer.delay( startServer, 100 );
+					}));
+					/*
+					disposables.add( commands.add( 'atom-workspace', 'xxx:build-all', function(e) {
+						var selectedHxmlFile = hxml.getPath();
+						for( file in hxmlFiles ) {
+							selectHxml( file );
+							build();
+						}
+						if( selectedHxmlFile != null ) selectHxml( selectedHxmlFile );
+					}));
+					*/
+					//build();
+				}
+			},
+			function(msg) {
+	//		 	console.log( '%c'+msg, 'color:${IDE.COLOR_HAXE_2};' );
+			}
+		);
+	}
 
 	static function goto() {
 		var editor : TextEditor = workspace.getActiveTextEditor();

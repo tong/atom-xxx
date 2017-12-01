@@ -1,6 +1,6 @@
 {
     "name": "xxx",
-    "version": "0.9.5",
+    "version": "0.10.2",
     "description": "Sex with haxe",
     "keywords": ["haxe","ide","xxx"],
     "repository": "https://github.com/tong/atom-xxx",
@@ -56,12 +56,6 @@
         "autocomplete.provider": {
             "versions": {
                 "2.0.0": "provideAutoCompletion"
-            }
-        },
-        "haxe": {
-            "description": "Provides access to haxe compiler",
-            "versions": {
-                "0.1.0": "provideService"
             }
         }
     }
