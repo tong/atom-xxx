@@ -21,9 +21,9 @@ class AutoCompleteProvider {
 	//@:keep public var filterSuggestions = true;
 
 	public var enabled : Bool;
+	public var service(default,null) : CompletionService;
 
 	var disposables : CompositeDisposable;
-	var service : CompletionService;
 
 	public function new() {
 		var cfg = IDE.getConfig( 'autocomplete' );
@@ -98,6 +98,14 @@ class AutoCompleteProvider {
 					}
 					return resolve( suggestions );
 				});
+
+				/*
+				service.usage( prefixPos ).then( function(items:Array<om.haxe.Message>) {
+					for( item in items ) {
+						trace(item);
+					}
+				});
+				*/
 
 			case '(':
 				return cast service.callArgument( prefixPos ).then( function(item:Item) {

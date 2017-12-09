@@ -112,7 +112,17 @@ class IDE {
 
 			disposables.add( workspace.observeTextEditors( function(editor:TextEditor){
 				var path = editor.getPath();
-				if( path != null && haxe.io.Path.extension( path ) == 'hx' ) {
+				if( path != null && path.extension() == 'hx' ) {
+					/*
+					editor.onDidChangeSelectionRange( function(e){
+						var pos = editor.getCursorBufferPosition();
+						if( autocomplete.service != null ) {
+							autocomplete.service.usage( pos ).then( function(r){
+								trace(r);
+							});
+						}
+					});
+					*/
 
 					/*
 					function getPosition( pos : Point, callback : Dynamic->Void ) {

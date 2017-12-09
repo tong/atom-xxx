@@ -1,7 +1,6 @@
 -js lib/xxx.js
 xxx.IDE
 -lib atom
--lib atom-haxe
 -lib om.haxe
 -lib om.io
 -lib om.net

@@ -77,16 +77,23 @@ class CompletionService {
 		});
 	}
 
-	public function usage( pos : Point, ?extraArgs : Array<String> ) : Promise<Array<Item>> {
+	public function usage( pos : Point, ?extraArgs : Array<String> ) : Promise<Array<om.haxe.Message>> {
 		return query( pos, 'usage', extraArgs ).then( function(xml:Element){
 			if( xml == null )
 				return [];
+			var messages : Array<om.haxe.Message> = [];
 			for( i in 0...xml.children.length ) {
 				var e = xml.children[i];
-				trace(e);
+				trace(e.nodeName);
+				switch e.nodeName {
+				case 'pos':
+					var msg = om.haxe.Message.parse( e.firstChild.nodeValue );
+					messages.push( msg );
+				case 'i':
+				}
 				//TODO
 			}
-			return cast [];
+			return cast messages;
 		});
 	}
 
@@ -124,6 +131,7 @@ class CompletionService {
 				function(r) {
 					parser = new DOMParser();
 					var xml = parser.parseFromString( r, APPLICATION_XML ).documentElement;
+					trace(xml);
 					lastQuery = args;
 					lastQueryXml = xml;
 					resolve( xml );
