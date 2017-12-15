@@ -119,7 +119,7 @@ class CompletionService {
 			var displayPos = '${editor.getPath()}@$index';
 			if( mode != null ) displayPos += '@$mode';
 			//var args = [ IDE.hxml.getPath(), '--display', displayPos ];
-			var args = [ '--display', displayPos ];
+			var args = [ '--display', displayPos, '--no-output' ];
 			if( IDE.hxml != null ) args = [IDE.hxml.getPath()].concat( args );
 			if( extraArgs != null ) args = args.concat( extraArgs );
 
