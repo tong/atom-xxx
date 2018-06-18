@@ -28,10 +28,18 @@ class AutoCompleteProvider {
 	public function new() {
 		var cfg = IDE.getConfig( 'autocomplete' );
 		this.enabled = cfg.enabled;
+
 		disposables = new CompositeDisposable();
+
+		Atom.config.observe( 'xxx.autocomplete', {}, function(n){
+			enabled = n.enabled;
+		});
+
+		/*
 		disposables.add( Atom.config.observe( 'xxx.autocomplete', function(n){
 			enabled = n.enabled;
 		} ) );
+		*/
 	}
 
 	@:keep

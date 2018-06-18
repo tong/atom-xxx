@@ -45,28 +45,33 @@ class Build extends Emitter {
 		args.push( hxml.getBaseName() );
 	//	args.push( '--times' );
 
-		//console.group( '%c'+'haxe '+args.join(' '), 'color:${IDE.COLOR_HAXE_3};' );
-		console.log( '%c'+'haxe '+args.join(' '), 'color:${IDE.COLOR_HAXE_3};' );
+		//trace(args);
+
+		console.group( '%c'+'haxe '+args.join(' '), 'color:${IDE.COLOR_HAXE_3};' );
+		//console.log( '%c'+'haxe '+args.join(' '), 'color:${IDE.COLOR_HAXE_3};' );
 
 		IDE.server.query( args,
 			function( res : String ) {
 				//if( res.length > 0 ) log( res );
-				//console.groupEnd();
+				console.groupEnd();
+				trace("END");
 				emit( EventType.end, 0 );
 			},
 			function( err : String ) {
-				trace(err);
+
+				//trace(err);
 				//var str : String = err.trim();
 				//var err = ErrorMessage.parse( str );
 				var str = err.trim();
 				//if( str.length > 0 )
+
 				console.log( str );
-				//console.groupEnd();
+
 				emit( EventType.error, str );
 				emit( EventType.end, null );
 			},
 			function( msg : String ) {
-				trace(msg);
+				//trace(msg);
 				/*
 				log( msg );
 				*/
@@ -75,6 +80,8 @@ class Build extends Emitter {
 		);
 
 		emit( EventType.start, null );
+
+		return this;
 	}
 
 	static inline function log( data ) {

@@ -212,7 +212,10 @@ class BuildView {
 			initialLine: line,
 			initialColumn: column,
 			activatePane: activatePane,
-			searchAllPanes : searchAllPanes
+			searchAllPanes : searchAllPanes,
+			pending: false,
+			split: null,
+			activateItem: true,
 		}).then( function(editor:TextEditor) {
 			if( callback != null ) callback( editor );
 		});
