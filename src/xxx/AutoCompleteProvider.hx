@@ -26,6 +26,7 @@ class AutoCompleteProvider {
 	var disposables : CompositeDisposable;
 
 	public function new() {
+
 		var cfg = IDE.getConfig( 'autocomplete' );
 		this.enabled = cfg.enabled;
 
@@ -166,6 +167,7 @@ class AutoCompleteProvider {
 						var name = switch item.k {
 						case 'enum','enumabstract','literal','local','member','package','static': item.c;
 						case 'type': item.p;
+						case 'method': item.n;
 						default: null;
 						}
 						if( prefix.length > 0 &&
@@ -194,6 +196,8 @@ class AutoCompleteProvider {
 						case 'member':
 							sug.type = 'member';
 							sug.rightLabel = item.t;
+						case 'method':
+							sug.snippet = 'function ' + item.n;
 						case 'package':
 							sug.type = 'package';
 						case 'static':
@@ -222,6 +226,7 @@ class AutoCompleteProvider {
 					if( suggestions.exists( 'type' ) ) result = result.concat( suggestions.get( 'type' ) );
 					if( suggestions.exists( 'package' ) ) result = result.concat( suggestions.get( 'package' ) );
 					if( suggestions.exists( 'enum' ) ) result = result.concat( suggestions.get( 'enum' ) );
+					if( suggestions.exists( 'method' ) ) result = result.concat( suggestions.get( 'method' ) );
 					return resolve( result );
 				}).catchError( function(e){
 					//TODO
